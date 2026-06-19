@@ -24,7 +24,7 @@ export default async function CollectionsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {collections.map((c: any) => (
             <Link key={c.id} href={`/collections/${c.id}`} className="card overflow-hidden group hover:shadow-lg transition-all">
-              <div className="aspect-[16/9] relative bg-gray-100 overflow-hidden">
+              <div className="aspect-[16/9] relative bg-gradient-to-br from-accent/20 to-gold-bg/30 overflow-hidden">
                 {c.cover_media?.storage_path_derivative && (
                   <Image src={c.cover_media.storage_path_derivative} alt={c.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
                 )}

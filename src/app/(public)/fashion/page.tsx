@@ -26,7 +26,7 @@ export default async function FashionPage() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {items.map((item: any) => (
-            <div key={item.id} className="group relative overflow-hidden rounded-lg bg-gray-100">
+            <div key={item.id} className="group relative overflow-hidden rounded-lg bg-gradient-to-br from-accent/20 to-gold-bg/30">
               <div className="aspect-[3/4] relative">
                 <Image
                   src={item.storage_path_derivative}

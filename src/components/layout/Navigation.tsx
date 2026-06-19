@@ -38,6 +38,9 @@ export default function Navigation() {
             <Link href="/shop" className="text-text-muted hover:text-accent transition-colors">
               Shop
             </Link>
+            <Link href="/videos" className="text-text-muted hover:text-accent transition-colors">
+              Videos
+            </Link>
             <Link href="/fashion" className="text-text-muted hover:text-accent transition-colors">
               Fashion
             </Link>
@@ -82,6 +85,7 @@ export default function Navigation() {
           <div className="md:hidden pb-4 space-y-2">
             <Link href="/gallery" className="block py-2 text-text-muted" onClick={() => setIsOpen(false)}>Gallery</Link>
             <Link href="/shop" className="block py-2 text-text-muted" onClick={() => setIsOpen(false)}>Shop</Link>
+            <Link href="/videos" className="block py-2 text-text-muted" onClick={() => setIsOpen(false)}>Videos</Link>
             <Link href="/fashion" className="block py-2 text-text-muted" onClick={() => setIsOpen(false)}>Fashion</Link>
             <Link href="/about" className="block py-2 text-text-muted" onClick={() => setIsOpen(false)}>About</Link>
             <Link href="/pricing" className="block py-2 text-gold" onClick={() => setIsOpen(false)}>Gold</Link>

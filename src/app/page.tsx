@@ -3,7 +3,7 @@ import Image from "next/image"
 import PublicLayout from "@/components/layout/PublicLayout"
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
-import { getDemoMedia, getDemoCollections, getDemoProducts, getDemoTestimonials, getDemoArtists, getDemoStats } from "@/lib/demo-data"
+import { getDemoMedia, getDemoCollections, getDemoProducts, getDemoVideos, getDemoTestimonials, getDemoArtists, getDemoStats } from "@/lib/demo-data"
 import { SHOP_CATEGORIES } from "@/lib/constants"
 
 async function getFeatured() {
@@ -15,28 +15,21 @@ async function getFeatured() {
   )
 
   const { data: media } = await supabase
-    .from("media")
-    .select("*")
-    .eq("context", "public_gallery")
-    .eq("is_featured", true)
-    .order("created_at", { ascending: false })
-    .limit(6)
+    .from("media").select("*").eq("context", "public_gallery").eq("is_featured", true)
+    .order("created_at", { ascending: false }).limit(6)
 
   const { data: collections } = await supabase
-    .from("collections")
-    .select("*, cover_media:media(storage_path_derivative)")
-    .limit(6)
+    .from("collections").select("*, cover_media:media(storage_path_derivative)").limit(6)
 
   const { data: products } = await supabase
-    .from("seller_products")
-    .select("*, pod_product:pod_products(name), media:media(storage_path_derivative)")
-    .eq("is_published", true)
-    .limit(8)
+    .from("seller_products").select("*, pod_product:pod_products(name), media:media(storage_path_derivative)")
+    .eq("is_published", true).limit(8)
 
   return {
     media: media?.length ? media : await getDemoMedia(6),
     collections: collections?.length ? collections : await getDemoCollections(),
     products: products?.length ? products : await getDemoProducts(),
+    videos: await getDemoVideos(),
   }
 }
 
@@ -48,22 +41,30 @@ const categoryIcons: Record<string, string> = {
   stationery: "M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13",
 }
 
+const categoryGradients: Record<string, string> = {
+  wall_art: "from-amber-100/60 to-amber-200/40",
+  home_decor: "from-emerald-100/60 to-emerald-200/40",
+  apparel: "from-blue-100/60 to-blue-200/40",
+  lifestyle: "from-purple-100/60 to-purple-200/40",
+  stationery: "from-rose-100/60 to-rose-200/40",
+}
+
+const sectionHeading = (title: string, link?: { href: string; label: string }) => (
+  <div className="flex items-center justify-between mb-8">
+    <h2 className="text-2xl md:text-3xl font-headline">{title}</h2>
+    {link && <Link href={link.href} className="text-sm text-accent hover:underline font-medium">{link.label} &rarr;</Link>}
+  </div>
+)
+
 export default async function HomePage() {
-  const { media, collections, products } = await getFeatured()
+  const { media, collections, products, videos } = await getFeatured()
   const testimonials = getDemoTestimonials()
   const artists = await getDemoArtists()
   const stats = getDemoStats()
 
-  const sectionHeading = (title: string, link?: { href: string; label: string }) => (
-    <div className="flex items-center justify-between mb-8">
-      <h2 className="text-2xl md:text-3xl font-headline">{title}</h2>
-      {link && <Link href={link.href} className="text-sm text-accent hover:underline font-medium">{link.label} &rarr;</Link>}
-    </div>
-  )
-
   return (
     <PublicLayout>
-      {/* ────────────── HERO ────────────── */}
+      {/* ═══════════ HERO ═══════════ */}
       <section className="relative overflow-hidden bg-gradient-to-br from-accent/5 via-primary-bg to-gold-bg/20">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--color-accent)_0%,_transparent_60%)] opacity-5" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28 relative">
@@ -81,12 +82,13 @@ export default async function HomePage() {
             <div className="flex flex-wrap justify-center gap-4">
               <Link href="/gallery" className="btn-primary text-lg px-8 py-3 shadow-sm hover:shadow-md transition-all">Browse Gallery</Link>
               <Link href="/shop" className="btn-secondary text-lg px-8 py-3">Shop Prints</Link>
+              <Link href="/videos" className="btn-gold text-lg px-8 py-3">Watch Videos</Link>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ────────────── STATS ────────────── */}
+      {/* ═══════════ STATS ═══════════ */}
       <section className="border-y border-border bg-surface">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
@@ -100,7 +102,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ────────────── EXPLORE CATEGORIES ────────────── */}
+      {/* ═══════════ EXPLORE CATEGORIES ═══════════ */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {sectionHeading("Explore Categories", { href: "/shop", label: "Shop all" })}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
@@ -108,26 +110,29 @@ export default async function HomePage() {
             <Link
               key={cat.slug}
               href={`/shop/${cat.slug}`}
-              className="card p-6 text-center hover:shadow-md hover:-translate-y-1 transition-all duration-200 group"
+              className={`card p-6 text-center hover:shadow-lg hover:-translate-y-1 transition-all duration-200 group bg-gradient-to-br ${categoryGradients[cat.slug]}`}
             >
-              <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-accent/10 flex items-center justify-center group-hover:bg-accent/20 transition-colors">
-                <svg className="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-white/70 flex items-center justify-center group-hover:bg-white group-hover:scale-110 transition-all">
+                <svg className="w-7 h-7 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={categoryIcons[cat.slug]} />
                 </svg>
               </div>
-              <h3 className="text-sm font-semibold group-hover:text-accent transition-colors">{cat.name}</h3>
+              <h3 className="font-headline font-semibold group-hover:text-accent transition-colors">{cat.name}</h3>
+              <p className="text-xs text-text-muted mt-1">Browse collection</p>
             </Link>
           ))}
         </div>
       </section>
 
-      {/* ────────────── FEATURED GALLERY ────────────── */}
+      {/* ═══════════ FEATURED GALLERY ═══════════ */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         {sectionHeading("Featured Photography", { href: "/gallery", label: "View all" })}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {media.map((m: any) => (
-            <Link key={m.id} href={`/gallery/${m.id}`} className="group relative overflow-hidden rounded-lg aspect-[4/3] bg-gray-100">
-              <Image src={m.storage_path_derivative} alt={m.title || ""} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="(max-width:768px) 50vw, 33vw" />
+            <Link key={m.id} href={`/gallery/${m.id}`} className="group relative overflow-hidden rounded-lg bg-gradient-to-br from-accent/20 to-gold-bg/30">
+              <div className="aspect-[4/3] relative">
+                <Image src={m.storage_path_derivative} alt={m.title || ""} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="(max-width:768px) 50vw, 33vw" />
+              </div>
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               {m.title && <div className="absolute inset-x-0 bottom-0 p-4 translate-y-2 group-hover:translate-y-0 transition-transform"><p className="text-white text-sm font-medium truncate">{m.title}</p></div>}
             </Link>
@@ -135,7 +140,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ────────────── SHOP BEST SELLERS ────────────── */}
+      {/* ═══════════ SHOP BEST SELLERS ═══════════ */}
       {products.length > 0 && (
         <section className="bg-surface border-y border-border">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -143,12 +148,14 @@ export default async function HomePage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {products.map((p: any) => (
                 <Link key={p.id} href={`/shop/product/${p.id}`} className="card overflow-hidden group hover:shadow-md transition-shadow">
-                  <div className="aspect-square relative bg-gray-100 overflow-hidden">
-                    <Image src={p.mockup_url} alt="" fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="25vw" />
+                  <div className="aspect-square relative bg-gradient-to-br from-accent/10 to-gold-bg/20 overflow-hidden">
+                    {p.mockup_url && (
+                      <Image src={p.mockup_url} alt="" fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="25vw" />
+                    )}
                   </div>
                   <div className="p-3">
                     <p className="text-xs text-text-muted truncate">{p.pod_product?.name || "Product"}</p>
-                    <p className="font-semibold text-accent">${p.seller_price.toFixed(2)}</p>
+                    <p className="font-semibold text-accent">${Number(p.seller_price).toFixed(2)}</p>
                   </div>
                 </Link>
               ))}
@@ -157,47 +164,100 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* ────────────── HOW IT WORKS ────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <h2 className="text-2xl md:text-3xl font-headline mb-4">How It Works</h2>
-          <p className="text-text-muted">From discovery to delivery — bringing art into your life is simple.</p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {[
-            { step: "01", title: "Browse & Discover", desc: "Explore thousands of photographs and designs from talented artists around the world.", icon: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" },
-            { step: "02", title: "Choose Your Product", desc: "Select from canvas prints, framed art, apparel, home decor, and more premium items.", icon: "M5 13l4 4L19 7" },
-            { step: "03", title: "Order & Enjoy", desc: "We print and ship worldwide with premium quality. Your satisfaction is guaranteed.", icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" },
-          ].map((item) => (
-            <div key={item.step} className="card p-8 text-center hover:shadow-md transition-shadow">
-              <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-accent/10 flex items-center justify-center">
-                <svg className="w-7 h-7 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
-                </svg>
+      {/* ═══════════ VIDEO SHOWCASE ═══════════ */}
+      {videos.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          {sectionHeading("Video Showcase", { href: "/gallery", label: "Browse gallery" })}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {videos.map((v: any) => (
+              <div key={v.id} className="group relative overflow-hidden rounded-lg bg-gradient-to-br from-accent/20 to-gold-bg/30 cursor-pointer">
+                <div className="aspect-[9/16] relative">
+                  <Image src={v.thumbnail || v.storage_path_derivative} alt={v.title || ""} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="(max-width:768px) 50vw, 33vw" />
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                    <svg className="w-6 h-6 text-accent ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/60 via-transparent to-transparent">
+                  <p className="text-white text-sm font-medium truncate">{v.title}</p>
+                  {v.duration && <p className="text-white/70 text-xs">{Math.floor(v.duration / 60)}:{String(v.duration % 60).padStart(2, '0')}</p>}
+                </div>
               </div>
-              <span className="text-xs font-mono text-accent tracking-widest">{item.step}</span>
-              <h3 className="font-headline text-lg mt-2 mb-2">{item.title}</h3>
-              <p className="text-sm text-text-muted leading-relaxed">{item.desc}</p>
-            </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ═══════════ HOW IT WORKS ═══════════ */}
+      <section className="bg-surface border-y border-border">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <h2 className="text-2xl md:text-3xl font-headline mb-4">How It Works</h2>
+            <p className="text-text-muted">From discovery to delivery — bringing art into your life is simple.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              { step: "01", title: "Browse & Discover", desc: "Explore thousands of photographs and designs from talented artists around the world.", icon: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" },
+              { step: "02", title: "Choose Your Product", desc: "Select from canvas prints, framed art, apparel, home decor, and more premium items.", icon: "M5 13l4 4L19 7" },
+              { step: "03", title: "Order & Enjoy", desc: "We print and ship worldwide with premium quality. Your satisfaction is guaranteed.", icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" },
+            ].map((item) => (
+              <div key={item.step} className="card p-8 text-center hover:shadow-md transition-shadow">
+                <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-accent/10 flex items-center justify-center">
+                  <svg className="w-7 h-7 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
+                  </svg>
+                </div>
+                <span className="text-xs font-mono text-accent tracking-widest">{item.step}</span>
+                <h3 className="font-headline text-lg mt-2 mb-2">{item.title}</h3>
+                <p className="text-sm text-text-muted leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════ CURATED COLLECTIONS ═══════════ */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        {sectionHeading("Curated Collections", { href: "/collections", label: "View all" })}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {collections.map((c: any) => (
+            <Link key={c.id} href={`/collections/${c.id}`} className="card overflow-hidden group hover:shadow-md transition-shadow">
+              <div className="aspect-[16/9] relative bg-gradient-to-br from-accent/20 to-gold-bg/30 overflow-hidden">
+                {c.cover_media?.storage_path_derivative && (
+                  <Image src={c.cover_media.storage_path_derivative} alt={c.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+                )}
+              </div>
+              <div className="p-5">
+                <h3 className="font-headline font-semibold text-lg group-hover:text-accent transition-colors">{c.title}</h3>
+                {c.description && <p className="text-sm text-text-muted mt-1 line-clamp-2">{c.description}</p>}
+              </div>
+            </Link>
           ))}
         </div>
       </section>
 
-      {/* ────────────── CURATED COLLECTIONS ────────────── */}
+      {/* ═══════════ ARTIST SPOTLIGHT ═══════════ */}
       <section className="bg-surface border-y border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          {sectionHeading("Curated Collections", { href: "/collections", label: "View all" })}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {collections.map((c: any) => (
-              <Link key={c.id} href={`/collections/${c.id}`} className="card overflow-hidden group hover:shadow-md transition-shadow">
-                <div className="aspect-[16/9] relative bg-gray-100 overflow-hidden">
-                  {c.cover_media?.storage_path_derivative && (
-                    <Image src={c.cover_media.storage_path_derivative} alt={c.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
-                  )}
-                </div>
-                <div className="p-5">
-                  <h3 className="font-headline font-semibold text-lg group-hover:text-accent transition-colors">{c.title}</h3>
-                  {c.description && <p className="text-sm text-text-muted mt-1 line-clamp-2">{c.description}</p>}
+          {sectionHeading("Artist Spotlight", { href: "/sellers", label: "Meet all artists" })}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {artists.map((a) => (
+              <Link key={a.handle} href="/sellers" className="card overflow-hidden group hover:shadow-md transition-shadow">
+                <div className="aspect-square relative bg-gradient-to-br from-accent/30 to-gold-bg/40 overflow-hidden">
+                  {a.photo && <Image src={a.photo} alt={a.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="25vw" />}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-4 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white/80 shrink-0 bg-accent/50">
+                      {a.avatar && <Image src={a.avatar} alt="" width={40} height={40} className="object-cover" />}
+                    </div>
+                    <div className="text-white">
+                      <p className="text-sm font-semibold truncate">{a.name}</p>
+                      <p className="text-xs text-white/70 truncate">{a.bio}</p>
+                    </div>
+                  </div>
                 </div>
               </Link>
             ))}
@@ -205,32 +265,8 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ────────────── ARTIST SPOTLIGHT ────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        {sectionHeading("Artist Spotlight", { href: "/sellers", label: "Meet all artists" })}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          {artists.map((a) => (
-            <Link key={a.handle} href="/sellers" className="card overflow-hidden group hover:shadow-md transition-shadow">
-              <div className="aspect-square relative bg-gray-100 overflow-hidden">
-                <Image src={a.photo} alt={a.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="25vw" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-4 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white/80 shrink-0">
-                    <Image src={a.avatar} alt="" width={40} height={40} className="object-cover" />
-                  </div>
-                  <div className="text-white">
-                    <p className="text-sm font-semibold truncate">{a.name}</p>
-                    <p className="text-xs text-white/70 truncate">{a.bio}</p>
-                  </div>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* ────────────── TESTIMONIALS ────────────── */}
-      <section className="bg-accent/5 border-y border-border">
+      {/* ═══════════ TESTIMONIALS ═══════════ */}
+      <section className="bg-accent/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center max-w-2xl mx-auto mb-12">
             <h2 className="text-2xl md:text-3xl font-headline mb-4">What Our Community Says</h2>
@@ -248,8 +284,8 @@ export default async function HomePage() {
                 </div>
                 <p className="text-sm text-text-muted leading-relaxed mb-4">&ldquo;{t.text}&rdquo;</p>
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100 shrink-0">
-                    <Image src={t.avatar} alt={t.name} width={40} height={40} className="object-cover" />
+                  <div className="w-10 h-10 rounded-full overflow-hidden bg-accent/20 shrink-0">
+                    {t.avatar && <Image src={t.avatar} alt={t.name} width={40} height={40} className="object-cover" />}
                   </div>
                   <div>
                     <p className="text-sm font-semibold">{t.name}</p>
@@ -262,7 +298,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ────────────── NEWSLETTER ────────────── */}
+      {/* ═══════════ NEWSLETTER ═══════════ */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="card p-8 md:p-12 bg-gradient-to-br from-accent/5 to-gold-bg/30 border-accent/10">
           <div className="max-w-2xl mx-auto text-center">
@@ -276,7 +312,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ────────────── SELLER CTA ────────────── */}
+      {/* ═══════════ SELLER CTA ═══════════ */}
       <section className="border-t border-border bg-surface">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
           <h2 className="text-3xl md:text-4xl font-headline mb-4">Ready to showcase your work?</h2>

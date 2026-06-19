@@ -42,12 +42,12 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {products.map((p: any) => (
             <Link key={p.id} href={`/shop/product/${p.id}`} className="card overflow-hidden group hover:shadow-md transition-shadow">
-              <div className="aspect-square relative bg-gray-100 overflow-hidden">
+              <div className="aspect-square relative bg-gradient-to-br from-accent/10 to-gold-bg/20 overflow-hidden">
                 <Image src={p.mockup_url} alt="" fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="25vw" />
               </div>
               <div className="p-3">
                 <p className="text-xs text-text-muted truncate">{p.pod_product?.name || "Product"}</p>
-                <p className="font-semibold text-accent">${p.seller_price.toFixed(2)}</p>
+                <p className="font-semibold text-accent">${Number(p.seller_price).toFixed(2)}</p>
               </div>
             </Link>
           ))}
