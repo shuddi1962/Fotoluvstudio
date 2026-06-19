@@ -131,8 +131,10 @@ CREATE POLICY "Reviews viewable by all" ON reviews
   FOR SELECT USING (true);
 CREATE POLICY "Authenticated users can create reviews" ON reviews
   FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can manage own reviews" ON reviews
-  FOR UPDATE DELETE USING (auth.uid() = user_id);
+CREATE POLICY "Users can update own reviews" ON reviews
+  FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own reviews" ON reviews
+  FOR DELETE USING (auth.uid() = user_id);
 
 -- NOTIFICATIONS
 CREATE POLICY "Users can view own notifications" ON notifications

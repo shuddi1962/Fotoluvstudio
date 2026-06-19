@@ -1,5 +1,5 @@
 -- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- 1. PROFILES TABLE
 CREATE TABLE IF NOT EXISTS profiles (
@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS profiles (
 
 -- 2. EVENTS TABLE
 CREATE TABLE IF NOT EXISTS events (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   client_id UUID NOT NULL REFERENCES profiles(id),
   created_by UUID NOT NULL REFERENCES profiles(id),
   title TEXT NOT NULL,
@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS events (
 
 -- 3. MEDIA TABLE
 CREATE TABLE IF NOT EXISTS media (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   owner_id UUID NOT NULL REFERENCES profiles(id),
   event_id UUID REFERENCES events(id),
   context TEXT NOT NULL CHECK (context IN ('public_gallery', 'client_event', 'fashion_showcase', 'seller_design')),
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS media (
 
 -- 4. COLLECTIONS TABLE
 CREATE TABLE IF NOT EXISTS collections (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   owner_id UUID NOT NULL REFERENCES profiles(id),
   title TEXT NOT NULL,
   description TEXT,
@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS seller_profiles (
 
 -- 8. POD PRODUCTS TABLE
 CREATE TABLE IF NOT EXISTS pod_products (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   printful_product_id TEXT,
   category TEXT NOT NULL CHECK (category IN ('wall_art', 'home_decor', 'apparel', 'lifestyle', 'stationery')),
   name TEXT NOT NULL,
@@ -96,7 +96,7 @@ CREATE TABLE IF NOT EXISTS pod_products (
 
 -- 9. SELLER PRODUCTS TABLE
 CREATE TABLE IF NOT EXISTS seller_products (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   seller_id UUID NOT NULL REFERENCES seller_profiles(id) ON DELETE CASCADE,
   media_id UUID NOT NULL REFERENCES media(id) ON DELETE CASCADE,
   pod_product_id UUID NOT NULL REFERENCES pod_products(id),
@@ -109,7 +109,7 @@ CREATE TABLE IF NOT EXISTS seller_products (
 
 -- 10. PLATFORM FEE RULES TABLE
 CREATE TABLE IF NOT EXISTS platform_fee_rules (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   category TEXT CHECK (category IN ('wall_art', 'home_decor', 'apparel', 'lifestyle', 'stationery')),
   commission_percent NUMERIC NOT NULL,
   effective_from TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS platform_fee_rules (
 
 -- 11. ORDERS TABLE
 CREATE TABLE IF NOT EXISTS orders (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   customer_id UUID REFERENCES profiles(id),
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'paid', 'fulfilled', 'shipped', 'cancelled')),
   total_amount NUMERIC NOT NULL,
@@ -131,7 +131,7 @@ CREATE TABLE IF NOT EXISTS orders (
 
 -- 12. ORDER ITEMS TABLE
 CREATE TABLE IF NOT EXISTS order_items (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
   seller_product_id UUID NOT NULL REFERENCES seller_products(id),
   quantity INT NOT NULL DEFAULT 1,
@@ -143,7 +143,7 @@ CREATE TABLE IF NOT EXISTS order_items (
 
 -- 13. PAYOUTS TABLE
 CREATE TABLE IF NOT EXISTS payouts (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   seller_id UUID NOT NULL REFERENCES seller_profiles(id) ON DELETE CASCADE,
   period_start DATE NOT NULL,
   period_end DATE NOT NULL,
@@ -155,7 +155,7 @@ CREATE TABLE IF NOT EXISTS payouts (
 
 -- 14. SUBSCRIPTIONS TABLE
 CREATE TABLE IF NOT EXISTS subscriptions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'past_due', 'cancelled')),
   billing_provider TEXT CHECK (billing_provider IN ('paystack', 'flutterwave', 'stripe')),
@@ -166,7 +166,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
 
 -- 15. REVIEWS TABLE (Phase 1)
 CREATE TABLE IF NOT EXISTS reviews (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
   seller_product_id UUID NOT NULL REFERENCES seller_products(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
@@ -177,7 +177,7 @@ CREATE TABLE IF NOT EXISTS reviews (
 
 -- 16. NOTIFICATIONS TABLE (Phase 1)
 CREATE TABLE IF NOT EXISTS notifications (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   type TEXT NOT NULL CHECK (type IN ('new_event', 'order_shipped', 'new_sale', 'payout_processed', 'new_follower', 'membership_reminder', 'order_confirmation')),
   title TEXT NOT NULL,
@@ -197,7 +197,7 @@ CREATE TABLE IF NOT EXISTS follows (
 
 -- 18. BOOKING INQUIRIES TABLE (Phase 1)
 CREATE TABLE IF NOT EXISTS booking_inquiries (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   email TEXT NOT NULL,
   phone TEXT,

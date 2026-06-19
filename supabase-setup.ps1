@@ -5,8 +5,8 @@ Write-Host "=== FOTOLUVSTUDIO SUPABASE SETUP ===" -ForegroundColor Green
 Write-Host ""
 
 # ── 0. CONFIG ──────────────────────────────────────────────────────────────────
-$PROJECT_REF = "cececmpzyrqdnlbdgpyr"
-$SUPABASE_URL = "https://cececmpzyrqdnlbdgpyr.supabase.co"
+$PROJECT_REF = "cececmpzyrqdnlbdgpur"
+$SUPABASE_URL = "https://cececmpzyrqdnlbdgpur.supabase.co"
 $SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNlY2VjbXB6eXJxZG5sYmRncHVyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTg2ODEwNiwiZXhwIjoyMDk3NDQ0MTA2fQ.7dQgIh9iQ1-ULU8xXer-GdpY8-_eU4Ega8WaPq3zEvo"
 $ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNlY2VjbXB6eXJxZG5sYmRncHVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NjgxMDYsImV4cCI6MjA5NzQ0NDEwNn0.ymOiidVUXW0ArQuoeJDhc85DEjMRD5pn2t5vO8WGd1k"
 
