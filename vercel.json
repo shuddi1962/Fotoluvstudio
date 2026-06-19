@@ -1,0 +1,10 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "installCommand": "npm install",
+  "env": {
+    "NEXT_PUBLIC_SUPABASE_URL": "https://cececmpzyrqdnlbdgpyr.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNlY2VjbXB6eXJxZG5sYmRncHVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NjgxMDYsImV4cCI6MjA5NzQ0NDEwNn0.ymOiidVUXW0ArQuoeJDhc85DEjMRD5pn2t5vO8WGd1k"
+  }
+}
