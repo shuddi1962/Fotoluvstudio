@@ -1,10 +1,11 @@
 import Image from "next/image"
 import PublicLayout from "@/components/layout/PublicLayout"
 import Link from "next/link"
-import { getDemoFashionItems } from "@/lib/demo-data"
+import { getDemoFashionItems, getDemoMedia } from "@/lib/demo-data"
 
 export default async function FashionPage() {
   const items = await getDemoFashionItems()
+  const collections = await getDemoMedia(2)
 
   return (
     <PublicLayout>
@@ -24,9 +25,13 @@ export default async function FashionPage() {
 
       {/* Fashion Lookbook Grid */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-headline">Lookbook</h2>
+          <Link href="/shop/apparel" className="text-sm text-accent hover:underline font-medium">Shop apparel &rarr;</Link>
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {items.map((item: any) => (
-            <div key={item.id} className="group relative overflow-hidden rounded-lg bg-gradient-to-br from-accent/20 to-gold-bg/30">
+            <Link key={item.id} href="/shop/apparel" className="group relative overflow-hidden rounded-lg bg-gradient-to-br from-accent/20 to-gold-bg/30">
               <div className="aspect-[3/4] relative">
                 <Image
                   src={item.storage_path_derivative}
@@ -36,10 +41,14 @@ export default async function FashionPage() {
                   sizes="(max-width:768px) 50vw, 25vw"
                 />
               </div>
-              <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/60 via-transparent to-transparent">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute inset-x-0 bottom-0 p-4 translate-y-2 group-hover:translate-y-0 transition-transform">
                 <p className="text-white text-sm font-medium">{item.title}</p>
               </div>
-            </div>
+              <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="bg-white/90 text-accent text-xs font-semibold px-3 py-1 rounded-full">Shop now</span>
+              </div>
+            </Link>
           ))}
         </div>
       </section>
@@ -53,22 +62,25 @@ export default async function FashionPage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {[
-              { title: "Spring Collection 2026", desc: "Light fabrics, pastel tones, and effortless elegance for the new season.", items: 24 },
-              { title: "Urban Essentials", desc: "Modern silhouettes for the city dweller. Clean lines meet street-ready style.", items: 18 },
+              { title: "Spring Collection 2026", desc: "Light fabrics, pastel tones, and effortless elegance for the new season.", items: 24, img: collections[0] },
+              { title: "Urban Essentials", desc: "Modern silhouettes for the city dweller. Clean lines meet street-ready style.", items: 18, img: collections[1] },
             ].map((col) => (
-              <div key={col.title} className="card p-8 text-center hover:shadow-md transition-shadow group">
-                <div className="aspect-[3/4] bg-gradient-to-br from-accent/10 to-gold-bg/40 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
-                  <div className="text-center p-6">
-                    <svg className="w-12 h-12 text-accent/40 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-                    </svg>
-                    <p className="text-text-muted text-sm">{col.items} pieces</p>
+              <Link key={col.title} href="/shop/apparel" className="card overflow-hidden hover:shadow-md transition-shadow group">
+                <div className="aspect-[3/4] relative bg-gradient-to-br from-accent/10 to-gold-bg/40 overflow-hidden">
+                  {col.img && (
+                    <Image src={col.img.storage_path_derivative} alt={col.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-6">
+                    <h3 className="font-headline text-2xl text-white mb-1">{col.title}</h3>
+                    <p className="text-white/80 text-sm">{col.items} pieces</p>
                   </div>
                 </div>
-                <h3 className="font-headline text-xl group-hover:text-accent transition-colors">{col.title}</h3>
-                <p className="text-sm text-text-muted mt-2">{col.desc}</p>
-                <span className="inline-block mt-4 text-sm text-accent font-medium group-hover:underline">View collection &rarr;</span>
-              </div>
+                <div className="p-6 text-center">
+                  <p className="text-sm text-text-muted mb-3">{col.desc}</p>
+                  <span className="text-sm text-accent font-medium group-hover:underline">View collection &rarr;</span>
+                </div>
+              </Link>
             ))}
           </div>
         </div>
