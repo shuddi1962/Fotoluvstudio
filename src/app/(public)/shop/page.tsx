@@ -20,8 +20,8 @@ const categoryGradients: Record<string, string> = {
   stationery: "from-rose-100/60 to-rose-200/40",
 }
 
-export default function ShopPage() {
-  const products = getDemoProducts()
+export default async function ShopPage() {
+  const products = await getDemoProducts()
 
   return (
     <PublicLayout>

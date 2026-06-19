@@ -3,8 +3,8 @@ import PublicLayout from "@/components/layout/PublicLayout"
 import Link from "next/link"
 import { getDemoFashionItems } from "@/lib/demo-data"
 
-export default function FashionPage() {
-  const items = getDemoFashionItems()
+export default async function FashionPage() {
+  const items = await getDemoFashionItems()
 
   return (
     <PublicLayout>

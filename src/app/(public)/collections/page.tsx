@@ -3,8 +3,8 @@ import Image from "next/image"
 import PublicLayout from "@/components/layout/PublicLayout"
 import { getDemoCollections } from "@/lib/demo-data"
 
-export default function CollectionsPage() {
-  const collections = getDemoCollections()
+export default async function CollectionsPage() {
+  const collections = await getDemoCollections()
 
   return (
     <PublicLayout>

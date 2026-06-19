@@ -45,7 +45,7 @@ export default function GalleryClient() {
     }
 
     const { data } = await query
-    setPhotos(data?.length ? data : getDemoMedia(12))
+    setPhotos(data?.length ? data : await getDemoMedia(12))
     setLoading(false)
   }
 

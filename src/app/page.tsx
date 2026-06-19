@@ -34,9 +34,9 @@ async function getFeatured() {
     .limit(8)
 
   return {
-    media: media?.length ? media : getDemoMedia(6),
-    collections: collections?.length ? collections : getDemoCollections(),
-    products: products?.length ? products : getDemoProducts(),
+    media: media?.length ? media : await getDemoMedia(6),
+    collections: collections?.length ? collections : await getDemoCollections(),
+    products: products?.length ? products : await getDemoProducts(),
   }
 }
 
@@ -51,7 +51,7 @@ const categoryIcons: Record<string, string> = {
 export default async function HomePage() {
   const { media, collections, products } = await getFeatured()
   const testimonials = getDemoTestimonials()
-  const artists = getDemoArtists()
+  const artists = await getDemoArtists()
   const stats = getDemoStats()
 
   const sectionHeading = (title: string, link?: { href: string; label: string }) => (

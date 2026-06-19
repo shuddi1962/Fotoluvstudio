@@ -9,7 +9,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
   const catInfo = SHOP_CATEGORIES.find((c) => c.slug === category)
   const categoryName = catInfo?.name || category.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
   const subCategories = SUB_CATEGORIES[category as keyof typeof SUB_CATEGORIES] || []
-  const products = getDemoProducts()
+  const products = await getDemoProducts()
 
   return (
     <PublicLayout>
