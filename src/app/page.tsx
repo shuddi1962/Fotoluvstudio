@@ -1,64 +1,292 @@
 import Link from "next/link"
+import Image from "next/image"
 import PublicLayout from "@/components/layout/PublicLayout"
+import { createServerClient } from "@supabase/ssr"
+import { cookies } from "next/headers"
+import { getDemoMedia, getDemoCollections, getDemoProducts, getDemoTestimonials, getDemoArtists, getDemoStats } from "@/lib/demo-data"
+import { SHOP_CATEGORIES } from "@/lib/constants"
 
-export default function HomePage() {
+async function getFeatured() {
+  const cookieStore = await cookies()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll() { return cookieStore.getAll() }, setAll() {} } }
+  )
+
+  const { data: media } = await supabase
+    .from("media")
+    .select("*")
+    .eq("context", "public_gallery")
+    .eq("is_featured", true)
+    .order("created_at", { ascending: false })
+    .limit(6)
+
+  const { data: collections } = await supabase
+    .from("collections")
+    .select("*, cover_media:media(storage_path_derivative)")
+    .limit(6)
+
+  const { data: products } = await supabase
+    .from("seller_products")
+    .select("*, pod_product:pod_products(name), media:media(storage_path_derivative)")
+    .eq("is_published", true)
+    .limit(8)
+
+  return {
+    media: media?.length ? media : getDemoMedia(6),
+    collections: collections?.length ? collections : getDemoCollections(),
+    products: products?.length ? products : getDemoProducts(),
+  }
+}
+
+const categoryIcons: Record<string, string> = {
+  wall_art: "M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z",
+  home_decor: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6",
+  apparel: "M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01",
+  lifestyle: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2",
+  stationery: "M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13",
+}
+
+export default async function HomePage() {
+  const { media, collections, products } = await getFeatured()
+  const testimonials = getDemoTestimonials()
+  const artists = getDemoArtists()
+  const stats = getDemoStats()
+
+  const sectionHeading = (title: string, link?: { href: string; label: string }) => (
+    <div className="flex items-center justify-between mb-8">
+      <h2 className="text-2xl md:text-3xl font-headline">{title}</h2>
+      {link && <Link href={link.href} className="text-sm text-accent hover:underline font-medium">{link.label} &rarr;</Link>}
+    </div>
+  )
+
   return (
     <PublicLayout>
+      {/* ────────────── HERO ────────────── */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-accent/5 via-primary-bg to-gold-bg/20">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--color-accent)_0%,_transparent_60%)] opacity-5" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28 relative">
+          <div className="text-center max-w-3xl mx-auto">
+            <span className="inline-block px-4 py-1.5 bg-accent/10 text-accent text-sm font-medium rounded-full mb-6">
+              Discover &bull; Create &bull; Collect
+            </span>
+            <h1 className="text-5xl md:text-7xl font-headline text-text leading-tight mb-6">
+              Every image has a <span className="text-accent">story</span> worth telling
+            </h1>
+            <p className="text-lg md:text-xl text-text-muted mb-10 max-w-2xl mx-auto leading-relaxed">
+              Explore a world of photography, shop stunning prints on premium products,
+              discover independent artists, and experience fashion design brought to life.
+            </p>
+            <div className="flex flex-wrap justify-center gap-4">
+              <Link href="/gallery" className="btn-primary text-lg px-8 py-3 shadow-sm hover:shadow-md transition-all">Browse Gallery</Link>
+              <Link href="/shop" className="btn-secondary text-lg px-8 py-3">Shop Prints</Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ────────────── STATS ────────────── */}
+      <section className="border-y border-border bg-surface">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {stats.map((s) => (
+              <div key={s.label} className="text-center">
+                <div className="text-3xl md:text-4xl font-headline font-bold text-accent">{s.value}</div>
+                <div className="text-sm text-text-muted mt-1">{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ────────────── EXPLORE CATEGORIES ────────────── */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h1 className="text-5xl md:text-6xl font-headline text-text mb-6">
-            Every image has a story worth telling
-          </h1>
-          <p className="text-xl text-text-muted mb-8 leading-relaxed">
-            Explore a world of photography, shop stunning prints on premium products, 
-            discover independent artists, and experience fashion design brought to life.
+        {sectionHeading("Explore Categories", { href: "/shop", label: "Shop all" })}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+          {SHOP_CATEGORIES.map((cat) => (
+            <Link
+              key={cat.slug}
+              href={`/shop/${cat.slug}`}
+              className="card p-6 text-center hover:shadow-md hover:-translate-y-1 transition-all duration-200 group"
+            >
+              <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-accent/10 flex items-center justify-center group-hover:bg-accent/20 transition-colors">
+                <svg className="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={categoryIcons[cat.slug]} />
+                </svg>
+              </div>
+              <h3 className="text-sm font-semibold group-hover:text-accent transition-colors">{cat.name}</h3>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* ────────────── FEATURED GALLERY ────────────── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+        {sectionHeading("Featured Photography", { href: "/gallery", label: "View all" })}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {media.map((m: any) => (
+            <Link key={m.id} href={`/gallery/${m.id}`} className="group relative overflow-hidden rounded-lg aspect-[4/3] bg-gray-100">
+              <Image src={m.storage_path_derivative} alt={m.title || ""} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="(max-width:768px) 50vw, 33vw" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              {m.title && <div className="absolute inset-x-0 bottom-0 p-4 translate-y-2 group-hover:translate-y-0 transition-transform"><p className="text-white text-sm font-medium truncate">{m.title}</p></div>}
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* ────────────── SHOP BEST SELLERS ────────────── */}
+      {products.length > 0 && (
+        <section className="bg-surface border-y border-border">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            {sectionHeading("Shop Best Sellers", { href: "/shop", label: "Shop all" })}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {products.map((p: any) => (
+                <Link key={p.id} href={`/shop/product/${p.id}`} className="card overflow-hidden group hover:shadow-md transition-shadow">
+                  <div className="aspect-square relative bg-gray-100 overflow-hidden">
+                    <Image src={p.mockup_url} alt="" fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="25vw" />
+                  </div>
+                  <div className="p-3">
+                    <p className="text-xs text-text-muted truncate">{p.pod_product?.name || "Product"}</p>
+                    <p className="font-semibold text-accent">${p.seller_price.toFixed(2)}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ────────────── HOW IT WORKS ────────────── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="text-center max-w-2xl mx-auto mb-12">
+          <h2 className="text-2xl md:text-3xl font-headline mb-4">How It Works</h2>
+          <p className="text-text-muted">From discovery to delivery — bringing art into your life is simple.</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {[
+            { step: "01", title: "Browse & Discover", desc: "Explore thousands of photographs and designs from talented artists around the world.", icon: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" },
+            { step: "02", title: "Choose Your Product", desc: "Select from canvas prints, framed art, apparel, home decor, and more premium items.", icon: "M5 13l4 4L19 7" },
+            { step: "03", title: "Order & Enjoy", desc: "We print and ship worldwide with premium quality. Your satisfaction is guaranteed.", icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" },
+          ].map((item) => (
+            <div key={item.step} className="card p-8 text-center hover:shadow-md transition-shadow">
+              <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-accent/10 flex items-center justify-center">
+                <svg className="w-7 h-7 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
+                </svg>
+              </div>
+              <span className="text-xs font-mono text-accent tracking-widest">{item.step}</span>
+              <h3 className="font-headline text-lg mt-2 mb-2">{item.title}</h3>
+              <p className="text-sm text-text-muted leading-relaxed">{item.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ────────────── CURATED COLLECTIONS ────────────── */}
+      <section className="bg-surface border-y border-border">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          {sectionHeading("Curated Collections", { href: "/collections", label: "View all" })}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {collections.map((c: any) => (
+              <Link key={c.id} href={`/collections/${c.id}`} className="card overflow-hidden group hover:shadow-md transition-shadow">
+                <div className="aspect-[16/9] relative bg-gray-100 overflow-hidden">
+                  {c.cover_media?.storage_path_derivative && (
+                    <Image src={c.cover_media.storage_path_derivative} alt={c.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+                  )}
+                </div>
+                <div className="p-5">
+                  <h3 className="font-headline font-semibold text-lg group-hover:text-accent transition-colors">{c.title}</h3>
+                  {c.description && <p className="text-sm text-text-muted mt-1 line-clamp-2">{c.description}</p>}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ────────────── ARTIST SPOTLIGHT ────────────── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        {sectionHeading("Artist Spotlight", { href: "/sellers", label: "Meet all artists" })}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          {artists.map((a) => (
+            <Link key={a.handle} href="/sellers" className="card overflow-hidden group hover:shadow-md transition-shadow">
+              <div className="aspect-square relative bg-gray-100 overflow-hidden">
+                <Image src={a.photo} alt={a.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="25vw" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-4 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-white/80 shrink-0">
+                    <Image src={a.avatar} alt="" width={40} height={40} className="object-cover" />
+                  </div>
+                  <div className="text-white">
+                    <p className="text-sm font-semibold truncate">{a.name}</p>
+                    <p className="text-xs text-white/70 truncate">{a.bio}</p>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* ────────────── TESTIMONIALS ────────────── */}
+      <section className="bg-accent/5 border-y border-border">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <h2 className="text-2xl md:text-3xl font-headline mb-4">What Our Community Says</h2>
+            <p className="text-text-muted">Join thousands of satisfied artists and collectors.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {testimonials.map((t) => (
+              <div key={t.name} className="card p-6">
+                <div className="flex items-center gap-1 mb-3">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <svg key={i} className={`w-4 h-4 ${i < t.rating ? "text-gold" : "text-gray-200"}`} fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  ))}
+                </div>
+                <p className="text-sm text-text-muted leading-relaxed mb-4">&ldquo;{t.text}&rdquo;</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100 shrink-0">
+                    <Image src={t.avatar} alt={t.name} width={40} height={40} className="object-cover" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">{t.name}</p>
+                    <p className="text-xs text-text-muted">{t.role}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ────────────── NEWSLETTER ────────────── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="card p-8 md:p-12 bg-gradient-to-br from-accent/5 to-gold-bg/30 border-accent/10">
+          <div className="max-w-2xl mx-auto text-center">
+            <h2 className="text-2xl md:text-3xl font-headline mb-3">Stay Inspired</h2>
+            <p className="text-text-muted mb-6">Get the latest collections, artist spotlights, and exclusive offers delivered to your inbox.</p>
+            <form className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+              <input type="email" placeholder="Enter your email" className="input flex-1" required />
+              <button type="submit" className="btn-primary shrink-0">Subscribe</button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      {/* ────────────── SELLER CTA ────────────── */}
+      <section className="border-t border-border bg-surface">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+          <h2 className="text-3xl md:text-4xl font-headline mb-4">Ready to showcase your work?</h2>
+          <p className="text-text-muted max-w-xl mx-auto mb-8 leading-relaxed">
+            Join our community of artists and photographers. Sell your work on premium products worldwide with zero upfront cost.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <Link href="/gallery" className="btn-primary text-lg px-8 py-3">
-              Browse Gallery
-            </Link>
-            <Link href="/shop" className="btn-secondary text-lg px-8 py-3">
-              Shop Prints
-            </Link>
+            <Link href="/become-a-seller" className="btn-primary text-lg px-8 py-3">Become a Seller</Link>
+            <Link href="/pricing" className="btn-gold text-lg px-8 py-3">Gold Membership</Link>
           </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-          <div className="card p-8 text-center">
-            <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-headline mb-2">Public Gallery</h3>
-            <p className="text-text-muted">Browse thousands of stunning photographs. Find inspiration, save your favorites, and discover new artists.</p>
-          </div>
-          <div className="card p-8 text-center">
-            <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-headline mb-2">Print-on-Demand Shop</h3>
-            <p className="text-text-muted">Turn your favorite photos into canvas prints, apparel, mugs, and more. Every purchase supports the artist.</p>
-          </div>
-          <div className="card p-8 text-center">
-            <div className="w-16 h-16 bg-gold-bg rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-headline mb-2">Gold Membership</h3>
-            <p className="text-text-muted">Unlock watermark-free full-resolution downloads from your event galleries. The ultimate photography experience.</p>
-          </div>
-        </div>
-
-        <div className="text-center">
-          <h2 className="text-3xl font-headline mb-4">Ready to showcase your work?</h2>
-          <p className="text-text-muted mb-6">Join our community of artists and photographers. Sell your work on premium products worldwide.</p>
-          <Link href="/become-a-seller" className="btn-primary text-lg px-8 py-3">
-            Become a Seller
-          </Link>
         </div>
       </section>
     </PublicLayout>
