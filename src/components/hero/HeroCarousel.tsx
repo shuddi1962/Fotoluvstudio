@@ -102,7 +102,8 @@ export default function HeroCarousel() {
         {current === 0 && (
           <SlideKenBurns
             key="s0"
-            image={img(0)}
+            imageA={img(0)}
+            imageB={img(1)}
             gradient={FALLBACK_GRADIENTS[0]}
             slide={SLIDES[0]}
           />
@@ -187,15 +188,15 @@ export default function HeroCarousel() {
 }
 
 /* ─── Slide 0 — Ken Burns / crossfade background ─── */
-function SlideKenBurns({ image, gradient, slide }: { image: string; gradient: string; slide: typeof SLIDES[0] }) {
-  const hasImage = !!image
-  const [showSecond, setShowSecond] = useState(false)
+function SlideKenBurns({ imageA, imageB, gradient, slide }: { imageA: string; imageB: string; gradient: string; slide: typeof SLIDES[0] }) {
+  const hasA = !!imageA
+  const [showB, setShowB] = useState(false)
 
   useEffect(() => {
-    if (!hasImage) return
-    const t = setTimeout(() => setShowSecond(true), SLIDE_MS / 2)
+    if (!hasA) return
+    const t = setTimeout(() => setShowB(true), SLIDE_MS / 2)
     return () => clearTimeout(t)
-  }, [hasImage])
+  }, [hasA])
 
   return (
     <motion.div
@@ -205,13 +206,12 @@ function SlideKenBurns({ image, gradient, slide }: { image: string; gradient: st
       transition={{ duration: FADE_DURATION }}
       className="absolute inset-0"
     >
-      {/* Base background: gradient fallback */}
       <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
 
-      {/* Primary image with Ken Burns */}
-      {hasImage && (
+      {/* Image A — Ken Burns zoom */}
+      {hasA && (
         <motion.img
-          src={image}
+          src={imageA}
           alt=""
           className="absolute inset-0 w-full h-full object-cover"
           initial={{ scale: 1 }}
@@ -220,10 +220,10 @@ function SlideKenBurns({ image, gradient, slide }: { image: string; gradient: st
         />
       )}
 
-      {/* Secondary image crossfade */}
-      {showSecond && hasImage && (
+      {/* Image B — crossfades in mid-slide */}
+      {showB && !!imageB && (
         <motion.img
-          src={image}
+          src={imageB}
           alt=""
           className="absolute inset-0 w-full h-full object-cover"
           initial={{ opacity: 0, scale: 1.05 }}
@@ -232,7 +232,6 @@ function SlideKenBurns({ image, gradient, slide }: { image: string; gradient: st
         />
       )}
 
-      {/* Overlay + content */}
       <ContentLayer slide={slide} layout="center" />
     </motion.div>
   )
