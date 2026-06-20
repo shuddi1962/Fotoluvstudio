@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, type CSSProperties } from 'react'
 import { useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase-client'
 import PublicLayout from '@/components/layout/PublicLayout'
@@ -25,30 +25,12 @@ const GRADIENTS = [
   ['#C49A35', '#A67C25'],
 ]
 
-function svgGradient(idx: number, label: string): string {
+function gradientStyle(idx: number): CSSProperties {
   const [c1, c2] = GRADIENTS[idx % GRADIENTS.length]
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800">
-    <defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="${c1}"/>
-      <stop offset="100%" stop-color="${c2}"/>
-    </linearGradient></defs>
-    <rect fill="url(#g)" width="800" height="800"/>
-    <text x="400" y="380" font-family="Georgia,serif" font-size="48" fill="rgba(255,255,255,0.3)" text-anchor="middle">${label}</text>
-    <text x="400" y="440" font-family="sans-serif" font-size="18" fill="rgba(255,255,255,0.2)" text-anchor="middle">fotoluvstudio</text>
-  </svg>`
-  if (typeof btoa === 'function') return `data:image/svg+xml;base64,${btoa(svg)}`
-  return `data:image/svg+xml,${encodeURIComponent(svg)}`
+  return { background: `linear-gradient(135deg, ${c1}, ${c2})` }
 }
 
-const MOCKUP_PHOTOS = GRADIENTS.map((_, i) => svgGradient(i, ['Canvas', 'Framed', 'Mug', 'Poster', 'Tote', 'Tee'][i] || 'Product'))
-
-function buildVariantMockups(baseIdx: number, size: string, color: string): string[] {
-  return [
-    MOCKUP_PHOTOS[baseIdx % MOCKUP_PHOTOS.length],
-    MOCKUP_PHOTOS[(baseIdx + 1) % MOCKUP_PHOTOS.length],
-    MOCKUP_PHOTOS[(baseIdx + 2) % MOCKUP_PHOTOS.length],
-  ]
-}
+const CATEGORY_LABELS = ['Canvas', 'Framed', 'Mug', 'Poster', 'Tote', 'Tee']
 
 const DEMO_PRODUCT: FullProductData = {
   id: 'demo',
@@ -57,7 +39,7 @@ const DEMO_PRODUCT: FullProductData = {
   pod_product_id: 'demo-pod',
   selected_variant: null,
   seller_price: 39.99,
-  mockup_url: MOCKUP_PHOTOS[0],
+  mockup_url: '',
   is_published: true,
   created_at: new Date().toISOString(),
   pod_product: {
@@ -76,30 +58,36 @@ const DEMO_PRODUCT: FullProductData = {
     storefront_slug: 'demo-artist',
   },
   media: {
-    storage_path_derivative: MOCKUP_PHOTOS[0],
+    storage_path_derivative: null,
     title: 'Demo Artwork',
   },
 }
 
-const SIZE_MOCKUPS: Record<string, string[]> = {
-  '8×10"': MOCKUP_PHOTOS.slice(0, 3),
-  '11×14"': MOCKUP_PHOTOS.slice(1, 4),
-  '16×20"': MOCKUP_PHOTOS.slice(2, 5),
-  '20×30"': MOCKUP_PHOTOS.slice(3, 6),
+const SIZE_BASE_INDICES: Record<string, number> = {
+  '8×10"': 0,
+  '11×14"': 1,
+  '16×20"': 2,
+  '20×30"': 3,
 }
 
-const COLOR_MOCKUPS: Record<string, string[]> = {
-  'White Frame': MOCKUP_PHOTOS.slice(0, 3),
-  'Black Frame': MOCKUP_PHOTOS.slice(1, 4),
-  'No Frame': MOCKUP_PHOTOS.slice(2, 5),
+const COLOR_BASE_INDICES: Record<string, number> = {
+  'White Frame': 0,
+  'Black Frame': 1,
+  'No Frame': 2,
 }
 
-const CATEGORY_MOCKUPS: Record<string, string[]> = {
-  wall_art: MOCKUP_PHOTOS.slice(0, 4),
-  home_decor: MOCKUP_PHOTOS.slice(1, 5),
-  apparel: MOCKUP_PHOTOS.slice(2, 6),
-  lifestyle: [MOCKUP_PHOTOS[3], MOCKUP_PHOTOS[4], MOCKUP_PHOTOS[0]],
-  stationery: [MOCKUP_PHOTOS[4], MOCKUP_PHOTOS[5], MOCKUP_PHOTOS[1]],
+const CATEGORY_BASE_INDICES: Record<string, number[]> = {
+  wall_art: [0, 1, 2, 3],
+  home_decor: [1, 2, 3, 4],
+  apparel: [2, 3, 4, 5],
+  lifestyle: [3, 4, 0],
+  stationery: [4, 5, 1],
+}
+
+function getVariantIndices(size: string, color: string, category: string): number[] {
+  const count = 3
+  const base = SIZE_BASE_INDICES[size] ?? COLOR_BASE_INDICES[color] ?? CATEGORY_BASE_INDICES[category]?.[0] ?? 0
+  return Array.from({ length: count }, (_, i) => (base + i) % GRADIENTS.length)
 }
 
 export default function ProductDetailPage() {
@@ -112,7 +100,8 @@ export default function ProductDetailPage() {
   const [selectedImage, setSelectedImage] = useState(0)
   const [addedToCart, setAddedToCart] = useState(false)
   const [cartError, setCartError] = useState(false)
-  const [imgErrors, setImgErrors] = useState<Record<number, boolean>>({})
+  const [mainImgError, setMainImgError] = useState(false)
+  const [mainImageSrc, setMainImageSrc] = useState('')
   const supabase = createClient()
   const { addItem, itemCount } = useCart()
 
@@ -125,12 +114,32 @@ export default function ProductDetailPage() {
       }
     }, 3000)
 
-    const applyDemo = () => {
-      const demoProd = DEMO_PRODUCT
+    const applyDemo = async () => {
+      if (cancelled) return
+      let imgUrl = ''
+      try {
+        const products = await getDemoProducts()
+        const found = products.find(p => p.id === id)
+        if (found) {
+          imgUrl = found.mockup_url || ''
+          setProduct({
+            ...DEMO_PRODUCT,
+            id: found.id,
+            seller_price: found.seller_price,
+            mockup_url: imgUrl,
+            media: { ...DEMO_PRODUCT.media!, storage_path_derivative: imgUrl || null, title: found.pod_product?.name || DEMO_PRODUCT.media?.title || 'Product' },
+            pod_product: { ...DEMO_PRODUCT.pod_product!, name: found.pod_product?.name || DEMO_PRODUCT.pod_product?.name || 'Product' },
+          })
+          setMainImageSrc(imgUrl)
+        } else {
+          setProduct(DEMO_PRODUCT)
+        }
+      } catch {
+        setProduct(DEMO_PRODUCT)
+      }
       if (!cancelled) {
-        setProduct(demoProd)
-        if (demoProd.pod_product?.available_sizes?.length) setSelectedSize(demoProd.pod_product.available_sizes[0])
-        if (demoProd.pod_product?.available_variants?.length) setSelectedColor(demoProd.pod_product.available_variants[0])
+        setSelectedSize(DEMO_PRODUCT.pod_product?.available_sizes?.[0] || '')
+        setSelectedColor(DEMO_PRODUCT.pod_product?.available_variants?.[0] || '')
         setLoading(false)
       }
     }
@@ -187,17 +196,25 @@ export default function ProductDetailPage() {
 
   const category = product?.pod_product?.category || 'wall_art'
 
-  const variantImages = useMemo(() => {
-    const sizeKey = selectedSize || Object.keys(SIZE_MOCKUPS)[0]
-    const colorKey = selectedColor || 'White Frame'
-    const categoryImages = CATEGORY_MOCKUPS[category] || CATEGORY_MOCKUPS.wall_art
-    const sizeImages = SIZE_MOCKUPS[sizeKey] || categoryImages
-    const colorImages = COLOR_MOCKUPS[colorKey] || categoryImages
-    const merged = sizeImages.map((img, i) => colorImages[i] || img)
-    return merged.length > 0 ? merged : categoryImages
+  const variantIndices = useMemo(() => {
+    const size = selectedSize || '8×10"'
+    const color = selectedColor || 'White Frame'
+    return getVariantIndices(size, color, category)
   }, [selectedSize, selectedColor, category])
 
-  const currentMockup = variantImages[selectedImage] || variantImages[0] || product?.mockup_url || product?.media?.storage_path_derivative || '/images/placeholder-1.svg'
+  type GalleryItem = { type: 'image'; src: string } | { type: 'gradient'; gIdx: number }
+
+  const galleryItems = useMemo((): GalleryItem[] => {
+    const items: GalleryItem[] = []
+    if (mainImageSrc) items.push({ type: 'image', src: mainImageSrc })
+    variantIndices.forEach((gIdx) => {
+      items.push({ type: 'gradient', gIdx })
+    })
+    if (items.length === 0) items.push({ type: 'gradient', gIdx: 0 })
+    return items
+  }, [mainImageSrc, variantIndices])
+
+  const currentItem = galleryItems[selectedImage] ?? galleryItems[0]
 
   const currentPrice = product?.seller_price || 0
 
@@ -222,52 +239,43 @@ export default function ProductDetailPage() {
           {/* Left Column — Image Gallery */}
           <div className="space-y-4">
             {/* Main preview */}
-            <div className="aspect-square bg-gradient-to-br from-accent/10 to-gold-bg/20 rounded-xl overflow-hidden relative flex items-center justify-center">
-              {imgErrors[-1] ? (
-                <div className="text-center p-8">
-                  <svg className="w-16 h-16 mx-auto text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <p className="text-text-muted text-sm mt-2">{product.pod_product?.name || 'Product'}</p>
-                </div>
-              ) : (
+            <div className="aspect-square rounded-xl overflow-hidden relative flex items-center justify-center" style={!mainImgError && currentItem.type === 'image' ? undefined : gradientStyle(currentItem.type === 'gradient' ? currentItem.gIdx : 0)}>
+              {currentItem.type === 'image' && !mainImgError ? (
                 <img
-                  src={currentMockup}
+                  src={currentItem.src}
                   alt={product.pod_product?.name || 'Product'}
                   className="w-full h-full object-cover"
-                  onError={() => setImgErrors({ ...imgErrors, [-1]: true })}
+                  onError={() => setMainImgError(true)}
                 />
+              ) : (
+                <div className="text-center">
+                  <p className="text-white/40 text-3xl md:text-4xl font-headline">{product.pod_product?.name || 'Product'}</p>
+                  <p className="text-white/20 text-sm mt-2">fotoluvstudio</p>
+                </div>
               )}
               {selectedSize && (
-                <div className="absolute top-3 left-3 bg-black/60 text-white text-xs px-2 py-1 rounded">
+                <div className="absolute top-3 left-3 bg-black/40 text-white text-xs px-2 py-1 rounded backdrop-blur-sm">
                   {selectedSize}{selectedColor ? ` · ${selectedColor}` : ''}
                 </div>
               )}
             </div>
             {/* Thumbnail strip */}
-            {variantImages.length > 1 && (
+            {galleryItems.length > 1 && (
               <div className="flex gap-2 overflow-x-auto pb-1">
-                {variantImages.map((img, idx) => (
+                {galleryItems.map((item, idx) => (
                   <button
                     key={idx}
-                    onClick={() => { setSelectedImage(idx); setImgErrors({}) }}
+                    onClick={() => { setSelectedImage(idx); setMainImgError(false) }}
                     className={`shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
                       selectedImage === idx ? 'border-accent' : 'border-border hover:border-accent/50'
                     }`}
                   >
-                    {imgErrors[idx] ? (
-                      <div className="w-full h-full bg-accent/20 flex items-center justify-center">
-                        <svg className="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                      </div>
+                    {item.type === 'image' ? (
+                      <img src={item.src} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <img
-                        src={img}
-                        alt=""
-                        className="w-full h-full object-cover"
-                        onError={() => setImgErrors({ ...imgErrors, [idx]: true })}
-                      />
+                      <div className="w-full h-full flex items-center justify-center" style={gradientStyle(item.gIdx)}>
+                        <span className="text-white/30 text-[10px] font-headline">{CATEGORY_LABELS[item.gIdx % CATEGORY_LABELS.length]}</span>
+                      </div>
                     )}
                   </button>
                 ))}
