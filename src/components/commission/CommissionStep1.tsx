@@ -39,15 +39,20 @@ export default function CommissionStep1({ designer, onNext, initialData }: Commi
   }, [])
 
   const loadDesigns = async () => {
-    const { data } = await supabase
-      .from('media')
-      .select('*')
-      .eq('owner_id', designer.id)
-      .eq('context', 'fashion_showcase')
-      .order('created_at', { ascending: false })
+    try {
+      const { data } = await supabase
+        .from('media')
+        .select('*')
+        .eq('owner_id', designer.id)
+        .eq('context', 'fashion_showcase')
+        .order('created_at', { ascending: false })
 
-    if (data) setDesigns(data as (Media & { title: string })[])
-    setLoading(false)
+      if (data) setDesigns(data as (Media & { title: string })[])
+    } catch (err) {
+      console.error('Failed to load designs', err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleInspirationUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

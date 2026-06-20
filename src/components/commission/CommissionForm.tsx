@@ -88,48 +88,52 @@ export default function CommissionForm() {
   }, [])
 
   const loadDesigner = async () => {
-    let sellers
+    try {
+      let sellers
 
-    const { data: commissionSellers } = await supabase
-      .from('seller_profiles')
-      .select('*')
-      .eq('offers_commissions', true)
-      .limit(1)
-      .order('created_at', { ascending: true })
-
-    if (commissionSellers && commissionSellers.length > 0) {
-      sellers = commissionSellers
-    } else {
-      const { data: anySellers } = await supabase
+      const { data: commissionSellers } = await supabase
         .from('seller_profiles')
         .select('*')
+        .eq('offers_commissions', true)
         .limit(1)
         .order('created_at', { ascending: true })
 
-      sellers = anySellers
+      if (commissionSellers && commissionSellers.length > 0) {
+        sellers = commissionSellers
+      } else {
+        const { data: anySellers } = await supabase
+          .from('seller_profiles')
+          .select('*')
+          .limit(1)
+          .order('created_at', { ascending: true })
+
+        sellers = anySellers
+      }
+
+      if (sellers && sellers.length > 0) {
+        setDesigner(sellers[0])
+
+        const { data: settingsData } = await supabase
+          .from('seller_commission_settings')
+          .select('*')
+          .eq('designer_id', sellers[0].id)
+          .single()
+
+        if (settingsData) setSettings(settingsData)
+
+        const { data: fabricData } = await supabase
+          .from('fabric_options')
+          .select('*')
+          .eq('designer_id', sellers[0].id)
+          .eq('is_active', true)
+
+        if (fabricData) setFabrics(fabricData)
+      }
+    } catch (err) {
+      console.error('Failed to load designer', err)
+    } finally {
+      setLoading(false)
     }
-
-    if (sellers && sellers.length > 0) {
-      setDesigner(sellers[0])
-
-      const { data: settingsData } = await supabase
-        .from('seller_commission_settings')
-        .select('*')
-        .eq('designer_id', sellers[0].id)
-        .single()
-
-      if (settingsData) setSettings(settingsData)
-
-      const { data: fabricData } = await supabase
-        .from('fabric_options')
-        .select('*')
-        .eq('designer_id', sellers[0].id)
-        .eq('is_active', true)
-
-      if (fabricData) setFabrics(fabricData)
-    }
-
-    setLoading(false)
   }
 
   const saveState = () => {

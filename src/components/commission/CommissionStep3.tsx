@@ -38,17 +38,22 @@ export default function CommissionStep3({ garmentCategory, designerId, onNext, o
   }, [])
 
   const loadProfiles = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
 
-    const { data } = await supabase
-      .from('measurement_profiles')
-      .select('*')
-      .eq('customer_id', user.id)
-      .order('updated_at', { ascending: false })
+      const { data } = await supabase
+        .from('measurement_profiles')
+        .select('*')
+        .eq('customer_id', user.id)
+        .order('updated_at', { ascending: false })
 
-    if (data) setProfiles(data)
-    setLoading(false)
+      if (data) setProfiles(data)
+    } catch (err) {
+      console.error('Failed to load profiles', err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleProfileSelect = (profileId: string) => {
