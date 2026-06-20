@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase-client'
 import PublicLayout from '@/components/layout/PublicLayout'
@@ -16,6 +16,23 @@ interface FullProductData extends SellerProduct {
   media?: { storage_path_derivative: string | null; title: string | null }
 }
 
+const MOCKUP_PHOTOS = [
+  '/images/placeholder-1.svg',
+  '/images/placeholder-2.svg',
+  '/images/placeholder-3.svg',
+  '/images/placeholder-4.svg',
+  '/images/placeholder-5.svg',
+  '/images/placeholder-6.svg',
+]
+
+function buildVariantMockups(baseIdx: number, size: string, color: string): string[] {
+  return [
+    MOCKUP_PHOTOS[baseIdx % MOCKUP_PHOTOS.length],
+    MOCKUP_PHOTOS[(baseIdx + 1) % MOCKUP_PHOTOS.length],
+    MOCKUP_PHOTOS[(baseIdx + 2) % MOCKUP_PHOTOS.length],
+  ]
+}
+
 const DEMO_PRODUCT: FullProductData = {
   id: 'demo',
   seller_id: 'demo-seller',
@@ -23,7 +40,7 @@ const DEMO_PRODUCT: FullProductData = {
   pod_product_id: 'demo-pod',
   selected_variant: null,
   seller_price: 39.99,
-  mockup_url: '/images/placeholder-6.svg',
+  mockup_url: MOCKUP_PHOTOS[0],
   is_published: true,
   created_at: new Date().toISOString(),
   pod_product: {
@@ -42,9 +59,30 @@ const DEMO_PRODUCT: FullProductData = {
     storefront_slug: 'demo-artist',
   },
   media: {
-    storage_path_derivative: '/images/placeholder-6.svg',
+    storage_path_derivative: MOCKUP_PHOTOS[0],
     title: 'Demo Artwork',
   },
+}
+
+const SIZE_MOCKUPS: Record<string, string[]> = {
+  '8×10"': MOCKUP_PHOTOS.slice(0, 3),
+  '11×14"': MOCKUP_PHOTOS.slice(1, 4),
+  '16×20"': MOCKUP_PHOTOS.slice(2, 5),
+  '20×30"': MOCKUP_PHOTOS.slice(3, 6),
+}
+
+const COLOR_MOCKUPS: Record<string, string[]> = {
+  'White Frame': MOCKUP_PHOTOS.slice(0, 3),
+  'Black Frame': MOCKUP_PHOTOS.slice(1, 4),
+  'No Frame': MOCKUP_PHOTOS.slice(2, 5),
+}
+
+const CATEGORY_MOCKUPS: Record<string, string[]> = {
+  wall_art: MOCKUP_PHOTOS.slice(0, 4),
+  home_decor: MOCKUP_PHOTOS.slice(1, 5),
+  apparel: MOCKUP_PHOTOS.slice(2, 6),
+  lifestyle: [MOCKUP_PHOTOS[3], MOCKUP_PHOTOS[4], MOCKUP_PHOTOS[0]],
+  stationery: [MOCKUP_PHOTOS[4], MOCKUP_PHOTOS[5], MOCKUP_PHOTOS[1]],
 }
 
 export default function ProductDetailPage() {
@@ -54,9 +92,11 @@ export default function ProductDetailPage() {
   const [selectedVariant, setSelectedVariant] = useState<string>('')
   const [selectedSize, setSelectedSize] = useState<string>('')
   const [selectedColor, setSelectedColor] = useState<string>('')
+  const [selectedImage, setSelectedImage] = useState(0)
   const [addedToCart, setAddedToCart] = useState(false)
+  const [cartError, setCartError] = useState(false)
   const supabase = createClient()
-  const { addItem } = useCart()
+  const { addItem, itemCount } = useCart()
 
   useEffect(() => {
     (async () => {
@@ -76,7 +116,6 @@ export default function ProductDetailPage() {
           else if (typeof firstVar === 'object' && firstVar.color) setSelectedColor(firstVar.color)
         }
       } else {
-        // Fallback to demo product when Supabase has no data
         const demoProd = DEMO_PRODUCT
         setProduct(demoProd)
         if (demoProd.pod_product?.available_sizes?.length) setSelectedSize(demoProd.pod_product.available_sizes[0])
@@ -87,13 +126,33 @@ export default function ProductDetailPage() {
   }, [id])
 
   const handleAddToCart = async () => {
-    await addItem(id)
-    setAddedToCart(true)
-    setTimeout(() => setAddedToCart(false), 2000)
+    setCartError(false)
+    try {
+      await addItem(id)
+      setAddedToCart(true)
+      setTimeout(() => setAddedToCart(false), 2000)
+    } catch {
+      setCartError(true)
+      setTimeout(() => setCartError(false), 3000)
+    }
   }
 
   const sizes: string[] = product?.pod_product?.available_sizes || []
   const colors: string[] = product?.pod_product?.available_variants || []
+
+  const category = product?.pod_product?.category || 'wall_art'
+
+  const variantImages = useMemo(() => {
+    const sizeKey = selectedSize || Object.keys(SIZE_MOCKUPS)[0]
+    const colorKey = selectedColor || 'White Frame'
+    const categoryImages = CATEGORY_MOCKUPS[category] || CATEGORY_MOCKUPS.wall_art
+    const sizeImages = SIZE_MOCKUPS[sizeKey] || categoryImages
+    const colorImages = COLOR_MOCKUPS[colorKey] || categoryImages
+    const merged = sizeImages.map((img, i) => colorImages[i] || img)
+    return merged.length > 0 ? merged : categoryImages
+  }, [selectedSize, selectedColor, category])
+
+  const currentMockup = variantImages[selectedImage] || variantImages[0] || product?.mockup_url || product?.media?.storage_path_derivative || '/images/placeholder-1.svg'
 
   const currentPrice = product?.seller_price || 0
 
@@ -117,34 +176,49 @@ export default function ProductDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
           {/* Left Column — Image Gallery */}
           <div className="space-y-4">
+            {/* Main preview */}
             <div className="aspect-square bg-gradient-to-br from-accent/10 to-gold-bg/20 rounded-xl overflow-hidden relative">
-              {product.mockup_url ? (
-                <img
-                  src={product.mockup_url}
-                  alt={product.pod_product?.name || 'Product'}
-                  className="w-full h-full object-cover"
-                />
-              ) : product.media?.storage_path_derivative ? (
-                <img
-                  src={product.media.storage_path_derivative}
-                  alt={product.media.title || ''}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-text-muted">
-                  <svg className="w-20 h-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
+              <img
+                src={currentMockup}
+                alt={product.pod_product?.name || 'Product'}
+                className="w-full h-full object-cover"
+              />
+              {selectedSize && (
+                <div className="absolute top-3 left-3 bg-black/60 text-white text-xs px-2 py-1 rounded">
+                  {selectedSize}{selectedColor ? ` · ${selectedColor}` : ''}
                 </div>
               )}
             </div>
+            {/* Thumbnail strip */}
+            {variantImages.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {variantImages.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setSelectedImage(idx)}
+                    className={`shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
+                      selectedImage === idx ? 'border-accent' : 'border-border hover:border-accent/50'
+                    }`}
+                  >
+                    <img src={img} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+            {/* 3D view button */}
+            <button className="flex items-center gap-2 text-sm text-accent hover:underline">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5" />
+              </svg>
+              3D View
+            </button>
           </div>
 
           {/* Right Column — Purchase Panel */}
           <div className="space-y-6">
             <div>
               <p className="text-sm text-accent font-medium mb-1 capitalize">
-                {product.pod_product?.category?.replace('_', ' ') || 'Product'}
+                {category.replace('_', ' ') || 'Product'}
               </p>
               <h1 className="text-3xl md:text-4xl font-headline text-text leading-tight">
                 {product.media?.title || 'Untitled'} — {product.pod_product?.name}
@@ -172,7 +246,7 @@ export default function ProductDetailPage() {
                   {sizes.map((size) => (
                     <button
                       key={size}
-                      onClick={() => setSelectedSize(size)}
+                      onClick={() => { setSelectedSize(size); setSelectedImage(0) }}
                       className={`px-4 py-2 text-sm rounded-lg border transition-all ${
                         selectedSize === size
                           ? 'border-accent bg-accent text-white'
@@ -195,7 +269,7 @@ export default function ProductDetailPage() {
                     return (
                       <button
                         key={colorName}
-                        onClick={() => setSelectedColor(colorName)}
+                        onClick={() => { setSelectedColor(colorName); setSelectedImage(0) }}
                         className={`px-4 py-2 text-sm rounded-lg border transition-all ${
                           selectedColor === colorName
                             ? 'border-accent bg-accent text-white'
@@ -211,6 +285,11 @@ export default function ProductDetailPage() {
             )}
 
             {/* Add to Cart */}
+            {cartError && (
+              <div className="bg-error/10 text-error text-sm p-3 rounded-lg">
+                Could not add to cart. The item has been saved locally. <a href="/cart" className="underline">View cart</a>
+              </div>
+            )}
             <Button
               size="lg"
               className="w-full"

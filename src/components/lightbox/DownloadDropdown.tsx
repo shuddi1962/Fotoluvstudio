@@ -34,6 +34,23 @@ export default function DownloadDropdown({
   const supabase = createClient()
   const allUnlocked = isGoldMember || isOwner
 
+  const FALLBACK_TIERS: Record<string, DownloadTier[]> = {
+    photo: [
+      { id: 'sm', media_type: 'photo', tier_name: 'Small', width_px: 640, height_px: 960, is_free_tier: true, sort_order: 1, created_at: '' },
+      { id: 'md', media_type: 'photo', tier_name: 'Medium', width_px: 1280, height_px: 1920, is_free_tier: true, sort_order: 2, created_at: '' },
+      { id: 'lg', media_type: 'photo', tier_name: 'Large', width_px: 1920, height_px: 2880, is_free_tier: false, sort_order: 3, created_at: '' },
+      { id: 'xl', media_type: 'photo', tier_name: 'Original', width_px: 4647, height_px: 6971, is_free_tier: false, sort_order: 4, created_at: '' },
+    ],
+    video: [
+      { id: 'vsd', media_type: 'video', tier_name: 'SD — 360p', width_px: 360, height_px: 640, is_free_tier: true, sort_order: 1, created_at: '' },
+      { id: 'vsd2', media_type: 'video', tier_name: 'SD — 540p', width_px: 540, height_px: 960, is_free_tier: true, sort_order: 2, created_at: '' },
+      { id: 'vhd', media_type: 'video', tier_name: 'HD — 720p', width_px: 720, height_px: 1280, is_free_tier: true, sort_order: 3, created_at: '' },
+      { id: 'vfhd', media_type: 'video', tier_name: 'Full HD — 1080p', width_px: 1080, height_px: 1920, is_free_tier: false, sort_order: 4, created_at: '' },
+      { id: 'vqhd', media_type: 'video', tier_name: 'Quad HD — 1440p', width_px: 1440, height_px: 2560, is_free_tier: false, sort_order: 5, created_at: '' },
+      { id: 'v4k', media_type: 'video', tier_name: '4K UHD — 2160p', width_px: 2160, height_px: 3840, is_free_tier: false, sort_order: 6, created_at: '' },
+    ],
+  }
+
   useEffect(() => {
     supabase
       .from('download_tiers')
@@ -41,7 +58,8 @@ export default function DownloadDropdown({
       .eq('media_type', mediaType)
       .order('sort_order', { ascending: true })
       .then(({ data }) => {
-        if (data) setTiers(data)
+        if (data && data.length > 0) setTiers(data)
+        else setTiers(FALLBACK_TIERS[mediaType] || FALLBACK_TIERS.photo)
       })
   }, [mediaType])
 
