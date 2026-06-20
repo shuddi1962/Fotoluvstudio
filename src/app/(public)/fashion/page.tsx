@@ -1,6 +1,7 @@
 import Image from "next/image"
 import PublicLayout from "@/components/layout/PublicLayout"
 import Link from "next/link"
+import FashionGallery from "./FashionGallery"
 import { getDemoFashionItems, getDemoMedia } from "@/lib/demo-data"
 
 export default async function FashionPage() {
@@ -29,28 +30,7 @@ export default async function FashionPage() {
           <h2 className="text-2xl font-headline">Lookbook</h2>
           <Link href="/shop/apparel" className="text-sm text-accent hover:underline font-medium">Shop apparel &rarr;</Link>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {items.map((item: any) => (
-            <Link key={item.id} href="/shop/apparel" className="group relative overflow-hidden rounded-lg bg-gradient-to-br from-accent/20 to-gold-bg/30">
-              <div className="aspect-[3/4] relative">
-                <Image
-                  src={item.storage_path_derivative}
-                  alt={item.title || "Fashion"}
-                  fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-500"
-                  sizes="(max-width:768px) 50vw, 25vw"
-                />
-              </div>
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="absolute inset-x-0 bottom-0 p-4 translate-y-2 group-hover:translate-y-0 transition-transform">
-                <p className="text-white text-sm font-medium">{item.title}</p>
-              </div>
-              <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                <span className="bg-white/90 text-accent text-xs font-semibold px-3 py-1 rounded-full">Shop now</span>
-              </div>
-            </Link>
-          ))}
-        </div>
+        <FashionGallery items={items} />
       </section>
 
       {/* Collections */}
@@ -65,7 +45,7 @@ export default async function FashionPage() {
               { title: "Spring Collection 2026", desc: "Light fabrics, pastel tones, and effortless elegance for the new season.", items: 24, img: collections[0] },
               { title: "Urban Essentials", desc: "Modern silhouettes for the city dweller. Clean lines meet street-ready style.", items: 18, img: collections[1] },
             ].map((col) => (
-              <Link key={col.title} href="/shop/apparel" className="card overflow-hidden hover:shadow-md transition-shadow group">
+              <Link key={col.title} href={`/fashion/collection/${col.title.toLowerCase().replace(/\s+/g, '-')}`} className="card overflow-hidden hover:shadow-md transition-shadow group">
                 <div className="aspect-[3/4] relative bg-gradient-to-br from-accent/10 to-gold-bg/40 overflow-hidden">
                   {col.img && (
                     <Image src={col.img.storage_path_derivative} alt={col.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />

@@ -7,12 +7,44 @@ import PublicLayout from '@/components/layout/PublicLayout'
 import Button from '@/components/ui/Button'
 import Spinner from '@/components/ui/Spinner'
 import { useCart } from '@/context/CartContext'
+import { getDemoProducts } from '@/lib/demo-data'
 import type { SellerProduct, PodProduct, SellerProfile } from '@/types/database'
 
 interface FullProductData extends SellerProduct {
   pod_product?: PodProduct & { available_sizes: string[]; available_variants: any }
   seller_profile?: Pick<SellerProfile, 'storefront_name' | 'storefront_slug'>
   media?: { storage_path_derivative: string | null; title: string | null }
+}
+
+const DEMO_PRODUCT: FullProductData = {
+  id: 'demo',
+  seller_id: 'demo-seller',
+  media_id: 'demo-media',
+  pod_product_id: 'demo-pod',
+  selected_variant: null,
+  seller_price: 39.99,
+  mockup_url: '/images/placeholder-6.svg',
+  is_published: true,
+  created_at: new Date().toISOString(),
+  pod_product: {
+    id: 'demo-pod',
+    printful_product_id: null,
+    category: 'wall_art',
+    name: 'Canvas Print',
+    base_cost: 15,
+    available_sizes: ['8×10"', '11×14"', '16×20"', '20×30"'],
+    available_variants: ['White Frame', 'Black Frame', 'No Frame'],
+    is_active: true,
+    synced_at: new Date().toISOString(),
+  },
+  seller_profile: {
+    storefront_name: 'Demo Artist',
+    storefront_slug: 'demo-artist',
+  },
+  media: {
+    storage_path_derivative: '/images/placeholder-6.svg',
+    title: 'Demo Artwork',
+  },
 }
 
 export default function ProductDetailPage() {
@@ -27,24 +59,31 @@ export default function ProductDetailPage() {
   const { addItem } = useCart()
 
   useEffect(() => {
-    supabase
-      .from('seller_products')
-      .select('*, pod_product:pod_products(*), seller_profile:seller_profiles!seller_id(storefront_name, storefront_slug), media:media(storage_path_derivative, title)')
-      .eq('id', id)
-      .single()
-      .then(({ data }) => {
-        if (data) {
-          setProduct(data as FullProductData)
-          const pod = (data as any).pod_product
-          if (pod?.available_sizes?.length) setSelectedSize(pod.available_sizes[0])
-          if (pod?.available_variants?.length) {
-            const firstVar = pod.available_variants[0]
-            if (typeof firstVar === 'string') setSelectedColor(firstVar)
-            else if (typeof firstVar === 'object' && firstVar.color) setSelectedColor(firstVar.color)
-          }
+    (async () => {
+      const { data } = await supabase
+        .from('seller_products')
+        .select('*, pod_product:pod_products(*), seller_profile:seller_profiles!seller_id(storefront_name, storefront_slug), media:media(storage_path_derivative, title)')
+        .eq('id', id)
+        .single()
+
+      if (data) {
+        setProduct(data as FullProductData)
+        const pod = (data as any).pod_product
+        if (pod?.available_sizes?.length) setSelectedSize(pod.available_sizes[0])
+        if (pod?.available_variants?.length) {
+          const firstVar = pod.available_variants[0]
+          if (typeof firstVar === 'string') setSelectedColor(firstVar)
+          else if (typeof firstVar === 'object' && firstVar.color) setSelectedColor(firstVar.color)
         }
-        setLoading(false)
-      })
+      } else {
+        // Fallback to demo product when Supabase has no data
+        const demoProd = DEMO_PRODUCT
+        setProduct(demoProd)
+        if (demoProd.pod_product?.available_sizes?.length) setSelectedSize(demoProd.pod_product.available_sizes[0])
+        if (demoProd.pod_product?.available_variants?.length) setSelectedColor(demoProd.pod_product.available_variants[0])
+      }
+      setLoading(false)
+    })()
   }, [id])
 
   const handleAddToCart = async () => {
