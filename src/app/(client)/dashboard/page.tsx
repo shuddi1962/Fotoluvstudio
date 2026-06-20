@@ -13,6 +13,7 @@ import type { Event } from '@/types/database'
 export default function ClientDashboard() {
   const [events, setEvents] = useState<Event[]>([])
   const [isGoldMember, setIsGoldMember] = useState(false)
+  const [hasCommissions, setHasCommissions] = useState(false)
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
@@ -39,6 +40,13 @@ export default function ClientDashboard() {
       .order('event_date', { ascending: false })
 
     setEvents(eventData || [])
+
+    const { count } = await supabase
+      .from('commission_requests')
+      .select('*', { count: 'exact', head: true })
+      .eq('customer_id', user.id)
+    setHasCommissions((count || 0) > 0)
+
     setLoading(false)
   }
 
@@ -79,11 +87,12 @@ export default function ClientDashboard() {
           <h3 className="font-headline font-semibold mb-1">My Orders</h3>
           <p className="text-sm text-text-muted">View your purchase history and order status.</p>
         </Link>
-        <Link href="/dashboard/commissions" className="card p-5 hover:shadow-md transition-shadow border-2 border-accent/10">
-          <h3 className="font-headline font-semibold mb-1">My Commissions</h3>
-          <p className="text-sm text-text-muted">Track your bespoke design requests and their progress.</p>
-          <span className="inline-block mt-2 text-xs text-accent font-medium">New: Commission custom pieces &rarr;</span>
-        </Link>
+        {hasCommissions && (
+          <Link href="/dashboard/commissions" className="card p-5 hover:shadow-md transition-shadow border-2 border-accent/10">
+            <h3 className="font-headline font-semibold mb-1">My Commissions</h3>
+            <p className="text-sm text-text-muted">Track your bespoke design requests and their progress.</p>
+          </Link>
+        )}
       </div>
 
       <h2 className="text-xl font-headline mb-4">My Events</h2>

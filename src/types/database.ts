@@ -67,6 +67,7 @@ export interface SellerProfile {
   payout_method: string | null
   commission_rate_override: number | null
   approved_at: string | null
+  offers_commissions: boolean
   created_at: string
 }
 

@@ -65,7 +65,7 @@ export default function SellerDashboard() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
         <Card className="text-center">
           <p className="text-3xl font-headline text-accent">{stats.products}</p>
           <p className="text-sm text-text-muted">Products Listed</p>
@@ -78,10 +78,6 @@ export default function SellerDashboard() {
           <p className="text-3xl font-headline text-accent">${stats.revenue.toFixed(2)}</p>
           <p className="text-sm text-text-muted">Total Revenue</p>
         </Card>
-        <Link href="/seller/commissions" className="card p-6 text-center hover:shadow-md transition-shadow">
-          <p className="text-3xl font-headline text-gold">{stats.pendingCommissions}</p>
-          <p className="text-sm text-text-muted">Pending Commissions</p>
-        </Link>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -97,10 +93,17 @@ export default function SellerDashboard() {
           <h3 className="font-headline font-semibold mb-2">Payouts</h3>
           <p className="text-sm text-text-muted">Track your earnings and payout history.</p>
         </Link>
-        <Link href="/seller/commissions" className="card p-6 hover:shadow-md transition-shadow">
-          <h3 className="font-headline font-semibold mb-2">Commissions</h3>
-          <p className="text-sm text-text-muted">Manage bespoke design requests from customers.</p>
-        </Link>
+        {seller?.offers_commissions && (
+          <Link href="/seller/commissions" className="card p-6 hover:shadow-md transition-shadow border-2 border-accent/10">
+            <h3 className="font-headline font-semibold mb-2">Commissions</h3>
+            <p className="text-sm text-text-muted">Manage bespoke design requests from customers.</p>
+            {stats.pendingCommissions > 0 && (
+              <span className="inline-block mt-2 text-xs text-accent font-medium">
+                {stats.pendingCommissions} pending request{stats.pendingCommissions !== 1 ? 's' : ''} &rarr;
+              </span>
+            )}
+          </Link>
+        )}
         <Link href={`/sellers/${seller?.storefront_slug}`} className="card p-6 hover:shadow-md transition-shadow">
           <h3 className="font-headline font-semibold mb-2">View Storefront</h3>
           <p className="text-sm text-text-muted">Preview your public storefront.</p>

@@ -118,6 +118,15 @@ foreach ($u in $demoUsers) {
   }
 }
 
+# 4. Enable bespoke commissions for Zara (fashion designer)
+$zaraPatch = @{ offers_commissions = $true } | ConvertTo-Json
+curl -s -X PATCH "$SUPABASE_URL/rest/v1/seller_profiles?id=eq.72214291-4f4e-4f50-8267-895f17cd408e" `
+  -H "apikey: $SERVICE_ROLE_KEY" `
+  -H "Authorization: Bearer $SERVICE_ROLE_KEY" `
+  -H "Content-Type: application/json" `
+  -d $zaraPatch | Out-Null
+Write-Host "Zara: commissions enabled." -ForegroundColor Green
+
 Write-Host ""
 Write-Host "=== DEMO ACCOUNTS CREATED ===" -ForegroundColor Green
 Write-Host ""

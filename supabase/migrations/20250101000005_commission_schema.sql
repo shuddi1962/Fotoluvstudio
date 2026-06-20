@@ -112,6 +112,9 @@ ALTER TABLE notifications ADD CONSTRAINT notifications_type_check
     'commission_status_update', 'commission_message', 'commission_appointment_reminder'
   ));
 
+-- 10. SELLER PROFILES add offers_commissions flag
+ALTER TABLE seller_profiles ADD COLUMN IF NOT EXISTS offers_commissions BOOLEAN NOT NULL DEFAULT false;
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_commission_requests_customer ON commission_requests(customer_id);
 CREATE INDEX IF NOT EXISTS idx_commission_requests_designer ON commission_requests(designer_id);

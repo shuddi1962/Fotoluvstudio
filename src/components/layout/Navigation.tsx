@@ -10,6 +10,8 @@ export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [role, setRole] = useState<string | null>(null)
+  const [isAlsoSeller, setIsAlsoSeller] = useState(false)
+  const [showSwitcher, setShowSwitcher] = useState(false)
   const router = useRouter()
   const supabase = createClient()
   const { itemCount } = useCart()
@@ -19,13 +21,21 @@ export default function Navigation() {
       setUser(data.user)
       if (data.user) {
         supabase.from('profiles').select('role').eq('id', data.user.id).single().then(({ data: profile }) => {
-          if (profile) setRole(profile.role)
+          if (profile) {
+            setRole(profile.role)
+            if (profile.role === 'admin') {
+              supabase.from('seller_profiles').select('id').eq('id', data.user.id).single().then(({ data: sp }) => {
+                if (sp) setIsAlsoSeller(true)
+              })
+            }
+          }
         })
       }
     })
   })
 
   const dashboardHref = role === 'admin' ? '/admin/dashboard' : role === 'seller' ? '/seller/dashboard' : '/dashboard'
+  const isMultiRole = role === 'admin' && isAlsoSeller
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -74,11 +84,45 @@ export default function Navigation() {
             </Link>
 
             {user ? (
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                {isMultiRole && (
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowSwitcher(!showSwitcher)}
+                      className="text-xs text-text-muted hover:text-accent px-2 py-1 border border-border rounded transition-colors flex items-center gap-1"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                      </svg>
+                      Switch
+                    </button>
+                    {showSwitcher && (
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={() => setShowSwitcher(false)} />
+                        <div className="absolute right-0 top-full mt-1 w-52 bg-surface border border-border rounded-lg shadow-lg z-20 py-1">
+                          <Link
+                            href="/admin/dashboard"
+                            onClick={() => setShowSwitcher(false)}
+                            className={`block px-4 py-2 text-sm hover:bg-gray-50 ${dashboardHref === '/admin/dashboard' ? 'text-accent font-medium' : 'text-text'}`}
+                          >
+                            Admin Panel
+                          </Link>
+                          <Link
+                            href="/seller/dashboard"
+                            onClick={() => setShowSwitcher(false)}
+                            className={`block px-4 py-2 text-sm hover:bg-gray-50 ${dashboardHref === '/seller/dashboard' ? 'text-accent font-medium' : 'text-text'}`}
+                          >
+                            My Seller Dashboard
+                          </Link>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
                 <Link href={dashboardHref} className="btn-primary text-sm py-2 px-4">
                   Dashboard
                 </Link>
-                <button onClick={handleSignOut} className="text-text-muted hover:text-text">
+                <button onClick={handleSignOut} className="text-text-muted hover:text-text ml-2">
                   Sign Out
                 </button>
               </div>

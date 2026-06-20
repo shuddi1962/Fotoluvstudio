@@ -18,6 +18,9 @@ INSERT INTO seller_profiles (id, storefront_name, storefront_slug, bio, accent_c
   ('72214291-4f4e-4f50-8267-895f17cd408e', 'Zara Fashion House', 'zara-fashion', 'Contemporary fashion design blending traditional African textiles with modern silhouettes.', '#C77DFF', now())
 ON CONFLICT (id) DO NOTHING;
 
+-- Enable bespoke commissions for Zara Fashion House (designer storefront)
+UPDATE seller_profiles SET offers_commissions = true WHERE id = '72214291-4f4e-4f50-8267-895f17cd408e';
+
 -- ── EVENTS ─────────────────────────────────────────────────────────────────────
 INSERT INTO events (id, client_id, created_by, title, event_date, is_published) VALUES
   ('a1000000-0000-0000-0000-000000000001', 'd02f76e5-2946-4bab-b02a-bb27d0f808de', '4e5667c8-ff2f-4433-ba88-f4d21f1f3b84', 'Amara & Dapo Wedding', '2026-05-15', true),
