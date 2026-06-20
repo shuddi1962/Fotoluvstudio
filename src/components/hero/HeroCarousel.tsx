@@ -7,7 +7,7 @@ import { getCuratedPhotos, getProductPhotos, imgUrl } from '@/lib/pexels'
 import type { PexPhoto } from '@/lib/pexels'
 
 const SLIDE_MS = 6000
-const FADE_DURATION = 0.5
+const FADE_DURATION = 0.6
 
 const FALLBACK_GRADIENTS = [
   'from-accent/10 via-primary-bg to-gold-bg/20',
@@ -50,9 +50,9 @@ const SLIDES: { id: string; headline: React.ReactNode; subtext: string; ctas: Ct
 ]
 
 function btnClass(variant: Cta['variant']) {
-  if (variant === 'primary') return 'btn-primary text-lg px-8 py-3 shadow-sm hover:shadow-md'
-  if (variant === 'gold') return 'btn-gold text-lg px-8 py-3'
-  return 'btn-secondary text-lg px-8 py-3'
+  if (variant === 'primary') return 'btn-primary text-base md:text-lg px-6 md:px-8 py-2.5 md:py-3 shadow-sm hover:shadow-md'
+  if (variant === 'gold') return 'btn-gold text-base md:text-lg px-6 md:px-8 py-2.5 md:py-3'
+  return 'btn-secondary text-base md:text-lg px-6 md:px-8 py-2.5 md:py-3'
 }
 
 export default function HeroCarousel() {
@@ -93,7 +93,7 @@ export default function HeroCarousel() {
 
   return (
     <section
-      className="relative overflow-hidden h-[75dvh] md:h-[85dvh]"
+      className="relative overflow-hidden min-h-[55vh] md:min-h-[60vh]"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
@@ -129,59 +129,73 @@ export default function HeroCarousel() {
       </AnimatePresence>
 
       {/* Gradient overlay for text readability */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-black/50 pointer-events-none z-[1]" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-black/40 pointer-events-none z-[1]" />
+
+      {/* Bottom fade hinting at content below */}
+      <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-primary-bg via-primary-bg/80 to-transparent pointer-events-none z-[3]" />
 
       {/* Navigation arrows */}
       <button
         onClick={prev}
         aria-label="Previous slide"
-        className="absolute left-3 md:left-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/20 flex items-center justify-center text-white transition-colors"
+        className="absolute left-3 md:left-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/10 backdrop-blur-md hover:bg-white/25 flex items-center justify-center text-white transition-all hover:scale-110"
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
       </button>
       <button
         onClick={next}
         aria-label="Next slide"
-        className="absolute right-3 md:right-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/20 flex items-center justify-center text-white transition-colors"
+        className="absolute right-3 md:right-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/10 backdrop-blur-md hover:bg-white/25 flex items-center justify-center text-white transition-all hover:scale-110"
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
         </svg>
       </button>
 
       {/* Dot indicators */}
-      <div className="absolute bottom-16 md:bottom-20 left-1/2 -translate-x-1/2 z-20 flex gap-3">
+      <div className="absolute bottom-20 md:bottom-24 left-1/2 -translate-x-1/2 z-20 flex gap-3">
         {[0, 1, 2].map((i) => (
           <button
             key={i}
             onClick={() => go(i)}
             aria-label={`Go to slide ${i + 1}`}
-            className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
-              i === current ? 'bg-white w-8' : 'bg-white/40 hover:bg-white/60'
+            className={`rounded-full transition-all duration-500 ${
+              i === current ? 'bg-white w-8 h-2.5' : 'bg-white/30 hover:bg-white/50 w-2.5 h-2.5'
             }`}
           />
         ))}
       </div>
 
-      {/* Scroll-down indicator */}
+      {/* Scroll-down indicator — prominent, animated */}
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 2, duration: 0.8 }}
-        className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 2.5, duration: 1 }}
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2"
       >
-        <motion.svg
-          className="w-5 h-5 text-white/50"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          animate={{ y: [0, 6, 0] }}
-          transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
+        <motion.span
+          className="text-xs text-white/40 font-medium tracking-widest uppercase"
+          animate={{ opacity: [0.3, 0.7, 0.3] }}
+          transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-        </motion.svg>
+          Scroll to explore
+        </motion.span>
+        <motion.div
+          animate={{ y: [0, 8, 0] }}
+          transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
+          className="flex flex-col items-center gap-0.5"
+        >
+          <motion.svg
+            className="w-4 h-4 text-white/40"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7" />
+          </motion.svg>
+        </motion.div>
       </motion.div>
     </section>
   )
@@ -203,12 +217,11 @@ function SlideKenBurns({ imageA, imageB, gradient, slide }: { imageA: string; im
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: FADE_DURATION }}
+      transition={{ duration: FADE_DURATION, ease: 'easeInOut' }}
       className="absolute inset-0"
     >
       <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
 
-      {/* Image A — Ken Burns zoom */}
       {hasA && (
         <motion.img
           src={imageA}
@@ -220,14 +233,13 @@ function SlideKenBurns({ imageA, imageB, gradient, slide }: { imageA: string; im
         />
       )}
 
-      {/* Image B — crossfades in mid-slide */}
       {showB && !!imageB && (
         <motion.img
           src={imageB}
           alt=""
           className="absolute inset-0 w-full h-full object-cover"
           initial={{ opacity: 0, scale: 1.05 }}
-          animate={{ opacity: 1, scale: 1.08 }}
+          animate={{ opacity: 0.5, scale: 1.08 }}
           transition={{ duration: 2, ease: 'easeInOut' }}
         />
       )}
@@ -244,7 +256,7 @@ function SlideFull({ image, gradient, slide, reduced }: { image: string; gradien
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: FADE_DURATION }}
+      transition={{ duration: FADE_DURATION, ease: 'easeInOut' }}
       className="absolute inset-0"
     >
       <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
@@ -272,26 +284,25 @@ function SlideSplit({ images, gradient, slide, reduced }: { images: string[]; gr
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: FADE_DURATION }}
+      transition={{ duration: FADE_DURATION, ease: 'easeInOut' }}
       className="absolute inset-0"
     >
       <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
       <div className="absolute inset-0 flex flex-col md:flex-row">
-        {/* Left — text content */}
         <div className="flex-1 flex items-center justify-center px-6 md:px-12 lg:px-16 z-10">
-          <div className="max-w-xl text-center md:text-left py-10">
+          <div className="max-w-xl text-center md:text-left py-8">
             <motion.span
-              className="inline-block px-4 py-1.5 bg-accent/10 text-accent text-sm font-medium rounded-full mb-6"
+              className="inline-block px-4 py-1.5 bg-white/10 backdrop-blur-sm text-white text-sm font-medium rounded-full mb-6"
               initial={reduced ? {} : { opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
               Discover &bull; Create &bull; Collect
             </motion.span>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-headline text-white leading-tight mb-4">
+            <h1 className="text-3xl md:text-5xl lg:text-6xl font-headline text-white leading-tight mb-4">
               {slide.headline}
             </h1>
-            <p className="text-base md:text-lg text-white/70 mb-8 max-w-lg leading-relaxed">
+            <p className="text-sm md:text-lg text-white/70 mb-6 max-w-lg leading-relaxed">
               {slide.subtext}
             </p>
             <div className="flex flex-wrap gap-3 justify-center md:justify-start">
@@ -304,7 +315,6 @@ function SlideSplit({ images, gradient, slide, reduced }: { images: string[]; gr
           </div>
         </div>
 
-        {/* Right — staggered photo grid */}
         {grid.length >= 3 && (
           <motion.div
             className="hidden md:flex-1 md:flex items-center justify-center p-8 lg:p-12 z-10"
@@ -324,7 +334,7 @@ function SlideSplit({ images, gradient, slide, reduced }: { images: string[]; gr
                     show: { opacity: 1, y: 0 },
                   }}
                   transition={{ duration: 0.5, ease: 'easeOut' }}
-                  className={`overflow-hidden rounded-xl ${
+                  className={`overflow-hidden rounded-xl shadow-lg ${
                     i === 0 || i === 3 ? 'row-span-2' : ''
                   }`}
                 >
@@ -377,16 +387,16 @@ function ContentLayer({
 function PillAndContent({ slide }: { slide: (typeof SLIDES)[0] }) {
   return (
     <>
-      <span className="inline-block px-4 py-1.5 bg-white/10 backdrop-blur-sm text-white text-sm font-medium rounded-full mb-6">
+      <span className="inline-block px-4 py-1.5 bg-white/10 backdrop-blur-sm text-white text-sm font-medium rounded-full mb-5">
         Discover &bull; Create &bull; Collect
       </span>
-      <h1 className="text-4xl md:text-5xl lg:text-7xl font-headline text-white leading-tight mb-5">
+      <h1 className="text-3xl md:text-5xl lg:text-7xl font-headline text-white leading-tight mb-4">
         {slide.headline}
       </h1>
-      <p className="text-base md:text-lg text-white/70 mb-8 max-w-2xl mx-auto leading-relaxed">
+      <p className="text-sm md:text-lg text-white/70 mb-6 max-w-2xl mx-auto leading-relaxed">
         {slide.subtext}
       </p>
-      <div className="flex flex-wrap justify-center gap-4">
+      <div className="flex flex-wrap justify-center gap-3 md:gap-4">
         {slide.ctas.map((c) => (
           <Link key={c.label} href={c.href} className={btnClass(c.variant)}>
             {c.label}
