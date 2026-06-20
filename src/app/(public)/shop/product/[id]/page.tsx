@@ -16,14 +16,31 @@ interface FullProductData extends SellerProduct {
   media?: { storage_path_derivative: string | null; title: string | null }
 }
 
-const MOCKUP_PHOTOS = [
-  '/images/placeholder-1.svg',
-  '/images/placeholder-2.svg',
-  '/images/placeholder-3.svg',
-  '/images/placeholder-4.svg',
-  '/images/placeholder-5.svg',
-  '/images/placeholder-6.svg',
+const GRADIENTS = [
+  ['#2D6E5E', '#1E4F42'],
+  ['#B68A2E', '#8A6A1E'],
+  ['#4A7C6F', '#2D6E5E'],
+  ['#D4A843', '#B68A2E'],
+  ['#3D8B7A', '#2D6E5E'],
+  ['#C49A35', '#A67C25'],
 ]
+
+function svgGradient(idx: number, label: string): string {
+  const [c1, c2] = GRADIENTS[idx % GRADIENTS.length]
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800">
+    <defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="${c1}"/>
+      <stop offset="100%" stop-color="${c2}"/>
+    </linearGradient></defs>
+    <rect fill="url(#g)" width="800" height="800"/>
+    <text x="400" y="380" font-family="Georgia,serif" font-size="48" fill="rgba(255,255,255,0.3)" text-anchor="middle">${label}</text>
+    <text x="400" y="440" font-family="sans-serif" font-size="18" fill="rgba(255,255,255,0.2)" text-anchor="middle">fotoluvstudio</text>
+  </svg>`
+  if (typeof btoa === 'function') return `data:image/svg+xml;base64,${btoa(svg)}`
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`
+}
+
+const MOCKUP_PHOTOS = GRADIENTS.map((_, i) => svgGradient(i, ['Canvas', 'Framed', 'Mug', 'Poster', 'Tote', 'Tee'][i] || 'Product'))
 
 function buildVariantMockups(baseIdx: number, size: string, color: string): string[] {
   return [
@@ -95,6 +112,7 @@ export default function ProductDetailPage() {
   const [selectedImage, setSelectedImage] = useState(0)
   const [addedToCart, setAddedToCart] = useState(false)
   const [cartError, setCartError] = useState(false)
+  const [imgErrors, setImgErrors] = useState<Record<number, boolean>>({})
   const supabase = createClient()
   const { addItem, itemCount } = useCart()
 
@@ -177,12 +195,22 @@ export default function ProductDetailPage() {
           {/* Left Column — Image Gallery */}
           <div className="space-y-4">
             {/* Main preview */}
-            <div className="aspect-square bg-gradient-to-br from-accent/10 to-gold-bg/20 rounded-xl overflow-hidden relative">
-              <img
-                src={currentMockup}
-                alt={product.pod_product?.name || 'Product'}
-                className="w-full h-full object-cover"
-              />
+            <div className="aspect-square bg-gradient-to-br from-accent/10 to-gold-bg/20 rounded-xl overflow-hidden relative flex items-center justify-center">
+              {imgErrors[-1] ? (
+                <div className="text-center p-8">
+                  <svg className="w-16 h-16 mx-auto text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <p className="text-text-muted text-sm mt-2">{product.pod_product?.name || 'Product'}</p>
+                </div>
+              ) : (
+                <img
+                  src={currentMockup}
+                  alt={product.pod_product?.name || 'Product'}
+                  className="w-full h-full object-cover"
+                  onError={() => setImgErrors({ ...imgErrors, [-1]: true })}
+                />
+              )}
               {selectedSize && (
                 <div className="absolute top-3 left-3 bg-black/60 text-white text-xs px-2 py-1 rounded">
                   {selectedSize}{selectedColor ? ` · ${selectedColor}` : ''}
@@ -195,12 +223,25 @@ export default function ProductDetailPage() {
                 {variantImages.map((img, idx) => (
                   <button
                     key={idx}
-                    onClick={() => setSelectedImage(idx)}
+                    onClick={() => { setSelectedImage(idx); setImgErrors({}) }}
                     className={`shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
                       selectedImage === idx ? 'border-accent' : 'border-border hover:border-accent/50'
                     }`}
                   >
-                    <img src={img} alt="" className="w-full h-full object-cover" />
+                    {imgErrors[idx] ? (
+                      <div className="w-full h-full bg-accent/20 flex items-center justify-center">
+                        <svg className="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                    ) : (
+                      <img
+                        src={img}
+                        alt=""
+                        className="w-full h-full object-cover"
+                        onError={() => setImgErrors({ ...imgErrors, [idx]: true })}
+                      />
+                    )}
                   </button>
                 ))}
               </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import Image from 'next/image'
 import MediaLightbox from '@/components/lightbox/MediaLightbox'
 import type { Media } from '@/types/database'
@@ -10,12 +10,44 @@ interface HomeGalleryClientProps {
   videos: any[]
 }
 
+function toLightboxMedia(item: any): any {
+  if (item.media_type === 'video' || item.src) {
+    return {
+      id: item.id,
+      media_type: 'video',
+      title: item.title || '',
+      storage_path_derivative: item.src || item.storage_path_derivative || '',
+      storage_path_original: item.src || item.storage_path_original || '',
+      width_px: item.width || item.width_px || 1080,
+      height_px: item.height || item.height_px || 1920,
+      owner_id: item.owner_id || '',
+      context: item.context || 'public_gallery',
+      tags: item.tags || null,
+      watermark_tile_applied: false,
+      created_at: item.created_at || new Date().toISOString(),
+      event_id: item.event_id || null,
+      is_featured: item.is_featured || false,
+      owner: item.owner || undefined,
+      seller: item.seller || undefined,
+      thumbnail: item.thumbnail || '',
+    }
+  }
+  return item
+}
+
 export default function HomeGalleryClient({ media, videos }: HomeGalleryClientProps) {
   const [lightboxMedia, setLightboxMedia] = useState<any[] | null>(null)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
+  const allItems = useMemo(() => {
+    return [
+      ...media.map(toLightboxMedia),
+      ...videos.map(toLightboxMedia),
+    ]
+  }, [media, videos])
+
   const openLightbox = (items: any[], index: number) => {
-    setLightboxMedia(items)
+    setLightboxMedia(items.map(toLightboxMedia))
     setLightboxIndex(index)
   }
 

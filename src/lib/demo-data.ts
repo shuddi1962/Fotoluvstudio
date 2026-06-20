@@ -146,7 +146,8 @@ export async function getDemoVideos(): Promise<DemoVideo[]> {
   }
   return VIDEO_TITLES.map((title, i) => ({
     id: `vid-demo-${i + 1}`, title, thumbnail: PHOTO_SVGS[i % PHOTO_SVGS.length],
-    src: '', width: 1080, height: 1920, duration: 15,
+    src: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    width: 1080, height: 1920, duration: 15,
   }))
 }
 
