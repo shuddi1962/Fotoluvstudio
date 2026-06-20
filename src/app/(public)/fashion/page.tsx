@@ -66,12 +66,24 @@ export default async function FashionPage() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-        <p className="text-text-muted mb-4">Want to see these designs on premium apparel?</p>
-        <Link href="/shop/apparel" className="btn-primary text-lg px-8 py-3">
-          Shop Apparel
-        </Link>
+      {/* Commission CTA */}
+      <section className="bg-gradient-to-r from-accent/5 via-primary-bg to-gold-bg/20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+          <span className="inline-block px-4 py-1.5 bg-accent/10 text-accent text-sm font-medium rounded-full mb-4">Bespoke Tailoring</span>
+          <h2 className="text-3xl md:text-4xl font-headline mb-4">Commission a Custom Piece</h2>
+          <p className="text-text-muted max-w-xl mx-auto mb-6">
+            Made-to-measure, crafted just for you. Choose your fabric, your measurements,
+            your design — and work directly with the designer to bring it to life.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/fashion/commission/new" className="btn-primary text-lg px-8 py-3">
+              Start a Commission
+            </Link>
+            <Link href="/shop/apparel" className="btn-secondary text-lg px-8 py-3">
+              Shop Ready-to-Wear
+            </Link>
+          </div>
+        </div>
       </section>
     </PublicLayout>
   )

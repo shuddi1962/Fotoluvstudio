@@ -182,6 +182,103 @@ CREATE POLICY "Media edits viewable by owner" ON media_edits
 CREATE POLICY "Service role can manage all edits" ON media_edits
   FOR ALL USING (auth.role() = 'service_role');
 
+-- COMMISSION REQUESTS
+ALTER TABLE commission_requests ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Customers can view own commission requests" ON commission_requests
+  FOR SELECT USING (auth.uid() = customer_id);
+CREATE POLICY "Designers can view assigned commission requests" ON commission_requests
+  FOR SELECT USING (auth.uid() = designer_id);
+CREATE POLICY "Customers can create commission requests" ON commission_requests
+  FOR INSERT WITH CHECK (auth.uid() = customer_id);
+CREATE POLICY "Customers can update own commission requests" ON commission_requests
+  FOR UPDATE USING (auth.uid() = customer_id);
+CREATE POLICY "Designers can update assigned commission requests" ON commission_requests
+  FOR UPDATE USING (auth.uid() = designer_id);
+CREATE POLICY "Admin can manage all commission requests" ON commission_requests
+  FOR ALL USING (auth.uid() IN (SELECT id FROM profiles WHERE role = 'admin'));
+
+-- CUSTOMER MEASUREMENTS
+ALTER TABLE customer_measurements ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Customers can manage own measurements" ON customer_measurements
+  FOR ALL USING (auth.uid() = customer_id);
+CREATE POLICY "Designers can view measurements for their commissions" ON customer_measurements
+  FOR SELECT USING (
+    commission_request_id IN (
+      SELECT id FROM commission_requests WHERE designer_id = auth.uid()
+    )
+  );
+CREATE POLICY "Admin can view all measurements" ON customer_measurements
+  FOR SELECT USING (auth.uid() IN (SELECT id FROM profiles WHERE role = 'admin'));
+
+-- MEASUREMENT APPOINTMENTS
+ALTER TABLE measurement_appointments ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Customers can view own appointments" ON measurement_appointments
+  FOR SELECT USING (
+    commission_request_id IN (
+      SELECT id FROM commission_requests WHERE customer_id = auth.uid()
+    )
+  );
+CREATE POLICY "Designers can manage appointments" ON measurement_appointments
+  FOR ALL USING (auth.uid() = designer_id);
+CREATE POLICY "Admin can manage all appointments" ON measurement_appointments
+  FOR ALL USING (auth.uid() IN (SELECT id FROM profiles WHERE role = 'admin'));
+
+-- COMMISSION MESSAGES
+ALTER TABLE commission_messages ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Participants can view commission messages" ON commission_messages
+  FOR SELECT USING (
+    commission_request_id IN (
+      SELECT id FROM commission_requests
+      WHERE customer_id = auth.uid() OR designer_id = auth.uid()
+    )
+  );
+CREATE POLICY "Participants can send messages" ON commission_messages
+  FOR INSERT WITH CHECK (
+    sender_id = auth.uid() AND
+    commission_request_id IN (
+      SELECT id FROM commission_requests
+      WHERE customer_id = auth.uid() OR designer_id = auth.uid()
+    )
+  );
+CREATE POLICY "Admin can manage all messages" ON commission_messages
+  FOR ALL USING (auth.uid() IN (SELECT id FROM profiles WHERE role = 'admin'));
+
+-- FABRIC OPTIONS
+ALTER TABLE fabric_options ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Fabric options viewable by all" ON fabric_options
+  FOR SELECT USING (true);
+CREATE POLICY "Designers can manage own fabric options" ON fabric_options
+  FOR ALL USING (auth.uid() = designer_id);
+CREATE POLICY "Admin can manage all fabric options" ON fabric_options
+  FOR ALL USING (auth.uid() IN (SELECT id FROM profiles WHERE role = 'admin'));
+
+-- MEASUREMENT PROFILES
+ALTER TABLE measurement_profiles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Customers can manage own measurement profiles" ON measurement_profiles
+  FOR ALL USING (auth.uid() = customer_id);
+
+-- SELLER COMMISSION SETTINGS
+ALTER TABLE seller_commission_settings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Commission settings viewable by all" ON seller_commission_settings
+  FOR SELECT USING (true);
+CREATE POLICY "Designers can manage own settings" ON seller_commission_settings
+  FOR ALL USING (auth.uid() = designer_id);
+CREATE POLICY "Admin can manage all settings" ON seller_commission_settings
+  FOR ALL USING (auth.uid() IN (SELECT id FROM profiles WHERE role = 'admin'));
+
+-- SELLER AVAILABILITY
+ALTER TABLE seller_availability ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Availability viewable by all" ON seller_availability
+  FOR SELECT USING (true);
+CREATE POLICY "Designers can manage own availability" ON seller_availability
+  FOR ALL USING (auth.uid() = designer_id);
+
+-- Commission inspiration uploads bucket
+CREATE POLICY "Commission uploads authenticated" ON storage.objects
+  FOR INSERT WITH CHECK (
+    bucket_id = 'design-uploads' AND auth.role() = 'authenticated'
+  );
+
 -- Storage bucket policies
 -- web-derivatives (public read)
 CREATE POLICY "Web derivatives public read" ON storage.objects

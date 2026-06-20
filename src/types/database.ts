@@ -160,7 +160,7 @@ export interface Review {
 export interface Notification {
   id: string
   user_id: string
-  type: 'new_event' | 'order_shipped' | 'new_sale' | 'payout_processed' | 'new_follower' | 'membership_reminder' | 'order_confirmation'
+  type: 'new_event' | 'order_shipped' | 'new_sale' | 'payout_processed' | 'new_follower' | 'membership_reminder' | 'order_confirmation' | 'commission_request' | 'commission_quote' | 'commission_deposit_confirmed' | 'commission_status_update' | 'commission_message' | 'commission_appointment_reminder'
   title: string
   message: string | null
   is_read: boolean
@@ -172,6 +172,96 @@ export interface Follow {
   follower_id: string
   seller_id: string
   created_at: string
+}
+
+export interface CommissionRequest {
+  id: string
+  customer_id: string
+  designer_id: string
+  source_type: 'published_design' | 'custom_upload'
+  source_media_id: string | null
+  inspiration_media_ids: string[] | null
+  garment_category: string | null
+  fabric_choice_id: string | null
+  customer_notes: string | null
+  status: 'pending_review' | 'quoted' | 'deposit_paid' | 'in_production' | 'fitting_scheduled' | 'ready' | 'completed' | 'cancelled'
+  quoted_price: number | null
+  deposit_percentage: number | null
+  deposit_amount: number | null
+  deposit_paid_at: string | null
+  balance_paid_at: string | null
+  estimated_completion_date: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface CustomerMeasurement {
+  id: string
+  customer_id: string
+  commission_request_id: string | null
+  garment_category: string | null
+  measurements: any
+  unit: 'cm' | 'inches'
+  created_at: string
+}
+
+export interface MeasurementAppointment {
+  id: string
+  commission_request_id: string
+  designer_id: string
+  scheduled_for: string
+  location: string | null
+  status: 'scheduled' | 'completed' | 'cancelled' | 'no_show'
+  created_at: string
+}
+
+export interface CommissionMessage {
+  id: string
+  commission_request_id: string
+  sender_id: string
+  message: string
+  attachment_url: string | null
+  created_at: string
+}
+
+export interface FabricOption {
+  id: string
+  designer_id: string
+  name: string
+  description: string | null
+  price_modifier: number
+  swatch_image_url: string | null
+  is_active: boolean
+  created_at: string
+}
+
+export interface MeasurementProfile {
+  id: string
+  customer_id: string
+  label: string
+  measurements: any
+  unit: 'cm' | 'inches'
+  updated_at: string
+  created_at: string
+}
+
+export interface SellerCommissionSettings {
+  designer_id: string
+  accepts_custom_fabric: boolean
+  default_turnaround_days: number
+  default_deposit_percentage: number
+  studio_location: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface SellerAvailability {
+  id: string
+  designer_id: string
+  day_of_week: number
+  start_time: string
+  end_time: string
+  is_active: boolean
 }
 
 export interface BookingInquiry {

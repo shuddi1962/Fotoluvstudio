@@ -74,6 +74,18 @@ export default function ClientDashboard() {
         </Card>
       )}
 
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+        <Link href="/dashboard/orders" className="card p-5 hover:shadow-md transition-shadow">
+          <h3 className="font-headline font-semibold mb-1">My Orders</h3>
+          <p className="text-sm text-text-muted">View your purchase history and order status.</p>
+        </Link>
+        <Link href="/dashboard/commissions" className="card p-5 hover:shadow-md transition-shadow border-2 border-accent/10">
+          <h3 className="font-headline font-semibold mb-1">My Commissions</h3>
+          <p className="text-sm text-text-muted">Track your bespoke design requests and their progress.</p>
+          <span className="inline-block mt-2 text-xs text-accent font-medium">New: Commission custom pieces &rarr;</span>
+        </Link>
+      </div>
+
       <h2 className="text-xl font-headline mb-4">My Events</h2>
       {events.length === 0 ? (
         <EmptyState

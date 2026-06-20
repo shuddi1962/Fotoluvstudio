@@ -11,7 +11,7 @@ import type { SellerProfile } from '@/types/database'
 
 export default function SellerDashboard() {
   const [seller, setSeller] = useState<SellerProfile | null>(null)
-  const [stats, setStats] = useState({ products: 0, orders: 0, revenue: 0 })
+  const [stats, setStats] = useState({ products: 0, orders: 0, revenue: 0, pendingCommissions: 0 })
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
@@ -40,8 +40,14 @@ export default function SellerDashboard() {
       .select('*, seller_products!inner(seller_id)')
       .eq('seller_products.seller_id', user.id)
 
+    const { count: pendingCount } = await supabase
+      .from('commission_requests')
+      .select('*', { count: 'exact', head: true })
+      .eq('designer_id', user.id)
+      .eq('status', 'pending_review')
+
     const revenue = orderData?.reduce((sum, item) => sum + Number(item.seller_payout_amount), 0) || 0
-    setStats({ products: productCount || 0, orders: orderData?.length || 0, revenue })
+    setStats({ products: productCount || 0, orders: orderData?.length || 0, revenue, pendingCommissions: pendingCount || 0 })
     setLoading(false)
   }
 
@@ -59,7 +65,7 @@ export default function SellerDashboard() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-6 mb-8">
         <Card className="text-center">
           <p className="text-3xl font-headline text-accent">{stats.products}</p>
           <p className="text-sm text-text-muted">Products Listed</p>
@@ -72,6 +78,10 @@ export default function SellerDashboard() {
           <p className="text-3xl font-headline text-accent">${stats.revenue.toFixed(2)}</p>
           <p className="text-sm text-text-muted">Total Revenue</p>
         </Card>
+        <Link href="/seller/commissions" className="card p-6 text-center hover:shadow-md transition-shadow">
+          <p className="text-3xl font-headline text-gold">{stats.pendingCommissions}</p>
+          <p className="text-sm text-text-muted">Pending Commissions</p>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -86,6 +96,10 @@ export default function SellerDashboard() {
         <Link href="/seller/payouts" className="card p-6 hover:shadow-md transition-shadow">
           <h3 className="font-headline font-semibold mb-2">Payouts</h3>
           <p className="text-sm text-text-muted">Track your earnings and payout history.</p>
+        </Link>
+        <Link href="/seller/commissions" className="card p-6 hover:shadow-md transition-shadow">
+          <h3 className="font-headline font-semibold mb-2">Commissions</h3>
+          <p className="text-sm text-text-muted">Manage bespoke design requests from customers.</p>
         </Link>
         <Link href={`/sellers/${seller?.storefront_slug}`} className="card p-6 hover:shadow-md transition-shadow">
           <h3 className="font-headline font-semibold mb-2">View Storefront</h3>
