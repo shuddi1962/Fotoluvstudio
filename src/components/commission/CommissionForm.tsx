@@ -68,14 +68,15 @@ export default function CommissionForm() {
   const loadDesigner = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
+      setLoading(false)
       router.push('/login?redirect=/fashion/commission/new')
       return
     }
 
-    // Find the fashion designer (first seller with fashion_showcase media)
     const { data: sellers } = await supabase
       .from('seller_profiles')
       .select('*')
+      .eq('offers_commissions', true)
       .limit(1)
       .order('created_at', { ascending: true })
 
@@ -97,15 +98,6 @@ export default function CommissionForm() {
         .eq('is_active', true)
 
       if (fabricData) setFabrics(fabricData)
-
-      const { data: designData } = await supabase
-        .from('media')
-        .select('*')
-        .eq('owner_id', sellers[0].id)
-        .eq('context', 'fashion_showcase')
-        .order('created_at', { ascending: false })
-
-      if (designData) setDesigns(designData as (Media & { title: string })[])
     }
 
     setLoading(false)
