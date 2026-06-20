@@ -2,6 +2,7 @@ import Link from "next/link"
 import Image from "next/image"
 import PublicLayout from "@/components/layout/PublicLayout"
 import HomeGalleryClient from "@/components/gallery/HomeGalleryClient"
+import HeroCarousel from "@/components/hero/HeroCarousel"
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import { getDemoMedia, getDemoCollections, getDemoProducts, getDemoVideos, getDemoTestimonials, getDemoArtists, getDemoStats } from "@/lib/demo-data"
@@ -65,29 +66,8 @@ export default async function HomePage() {
 
   return (
     <PublicLayout>
-      {/* ═══════════ HERO ═══════════ */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-accent/5 via-primary-bg to-gold-bg/20">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--color-accent)_0%,_transparent_60%)] opacity-5" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28 relative">
-          <div className="text-center max-w-3xl mx-auto">
-            <span className="inline-block px-4 py-1.5 bg-accent/10 text-accent text-sm font-medium rounded-full mb-6">
-              Discover &bull; Create &bull; Collect
-            </span>
-            <h1 className="text-5xl md:text-7xl font-headline text-text leading-tight mb-6">
-              Every image has a <span className="text-accent">story</span> worth telling
-            </h1>
-            <p className="text-lg md:text-xl text-text-muted mb-10 max-w-2xl mx-auto leading-relaxed">
-              Explore a world of photography, shop stunning prints on premium products,
-              discover independent artists, and experience fashion design brought to life.
-            </p>
-            <div className="flex flex-wrap justify-center gap-4">
-              <Link href="/gallery" className="btn-primary text-lg px-8 py-3 shadow-sm hover:shadow-md transition-all">Browse Gallery</Link>
-              <Link href="/shop" className="btn-secondary text-lg px-8 py-3">Shop Prints</Link>
-              <Link href="/videos" className="btn-gold text-lg px-8 py-3">Watch Videos</Link>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* ═══════════ HERO CAROUSEL ═══════════ */}
+      <HeroCarousel />
 
       {/* ═══════════ STATS ═══════════ */}
       <section className="border-y border-border bg-surface">
