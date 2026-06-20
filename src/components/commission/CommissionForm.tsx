@@ -11,6 +11,8 @@ import CommissionStep5 from './CommissionStep5'
 import Spinner from '@/components/ui/Spinner'
 import type { SellerProfile, SellerCommissionSettings, FabricOption, Media } from '@/types/database'
 
+const STORAGE_KEY = 'commission_form_state'
+
 interface Step1Data {
   source_type: 'published_design' | 'custom_upload'
   source_media_id: string | null
@@ -30,17 +32,27 @@ interface Step3Data {
   appointment?: { scheduled_for: string; location: string }
 }
 
+interface SavedState {
+  step1Data: Step1Data
+  step2Data: Step2Data
+  step3Data: Step3Data
+  step: number
+}
+
 export default function CommissionForm() {
+  const router = useRouter()
+  const supabase = createClient()
+
   const [step, setStep] = useState(1)
   const [designer, setDesigner] = useState<SellerProfile | null>(null)
   const [settings, setSettings] = useState<SellerCommissionSettings | null>(null)
   const [fabrics, setFabrics] = useState<FabricOption[]>([])
-  const [designs, setDesigns] = useState<(Media & { title: string })[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [commissionId, setCommissionId] = useState<string | null>(null)
   const [depositAmount, setDepositAmount] = useState(0)
   const [selectedDesign, setSelectedDesign] = useState<(Media & { title: string }) | null>(null)
+  const [savedRedirect, setSavedRedirect] = useState(false)
 
   const [step1Data, setStep1Data] = useState<Step1Data>({
     source_type: 'published_design',
@@ -58,27 +70,44 @@ export default function CommissionForm() {
     measurement_profile_id: null,
   })
 
-  const router = useRouter()
-  const supabase = createClient()
-
   useEffect(() => {
+    // Restore saved state after login redirect
+    try {
+      const saved = sessionStorage.getItem(STORAGE_KEY)
+      if (saved) {
+        const parsed: SavedState = JSON.parse(saved)
+        sessionStorage.removeItem(STORAGE_KEY)
+        setStep1Data(parsed.step1Data)
+        setStep2Data(parsed.step2Data)
+        setStep3Data(parsed.step3Data)
+        setStep(parsed.step)
+        setSavedRedirect(true)
+      }
+    } catch {}
     loadDesigner()
   }, [])
 
   const loadDesigner = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      setLoading(false)
-      router.push('/login?redirect=/fashion/commission/new')
-      return
-    }
+    let sellers
 
-    const { data: sellers } = await supabase
+    const { data: commissionSellers } = await supabase
       .from('seller_profiles')
       .select('*')
       .eq('offers_commissions', true)
       .limit(1)
       .order('created_at', { ascending: true })
+
+    if (commissionSellers && commissionSellers.length > 0) {
+      sellers = commissionSellers
+    } else {
+      const { data: anySellers } = await supabase
+        .from('seller_profiles')
+        .select('*')
+        .limit(1)
+        .order('created_at', { ascending: true })
+
+      sellers = anySellers
+    }
 
     if (sellers && sellers.length > 0) {
       setDesigner(sellers[0])
@@ -103,11 +132,15 @@ export default function CommissionForm() {
     setLoading(false)
   }
 
+  const saveState = () => {
+    const state: SavedState = { step1Data, step2Data, step3Data, step }
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+  }
+
   const handleStep1Next = (data: Step1Data) => {
     setStep1Data(data)
     if (data.source_media_id) {
-      const found = designs.find(d => d.id === data.source_media_id)
-      if (found) setSelectedDesign(found)
+      // won't have selectedDesign on first render — fine, just track the id
     }
     setStep(2)
   }
@@ -124,6 +157,14 @@ export default function CommissionForm() {
 
   const handleSubmit = async () => {
     if (!designer) return
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      saveState()
+      router.push('/login?redirect=/fashion/commission/new')
+      return
+    }
+
     setSubmitting(true)
 
     const selectedFabric = step2Data.fabric_choice_id
@@ -153,7 +194,6 @@ export default function CommissionForm() {
     const commission = await res.json()
     setCommissionId(commission.id)
 
-    // Save measurements
     if (Object.keys(step3Data.measurements).length > 0) {
       await supabase.from('customer_measurements').insert({
         customer_id: commission.customer_id,
@@ -164,7 +204,6 @@ export default function CommissionForm() {
       })
     }
 
-    // Save appointment if booked
     if (step3Data.appointment) {
       await fetch('/api/appointments', {
         method: 'POST',

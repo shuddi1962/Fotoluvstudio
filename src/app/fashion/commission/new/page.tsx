@@ -1,7 +1,9 @@
 'use client'
 
+import { Suspense } from 'react'
 import PublicLayout from '@/components/layout/PublicLayout'
 import CommissionForm from '@/components/commission/CommissionForm'
+import Spinner from '@/components/ui/Spinner'
 
 export default function NewCommissionPage() {
   return (
@@ -21,7 +23,9 @@ export default function NewCommissionPage() {
           </p>
         </div>
 
-        <CommissionForm />
+        <Suspense fallback={<div className="flex justify-center py-16"><Spinner /></div>}>
+          <CommissionForm />
+        </Suspense>
       </section>
     </PublicLayout>
   )
