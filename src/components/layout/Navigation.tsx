@@ -4,12 +4,14 @@ import Link from "next/link"
 import { useState } from "react"
 import { createClient } from "@/lib/supabase-client"
 import { useRouter } from "next/navigation"
+import { useCart } from "@/context/CartContext"
 
 export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
   const [user, setUser] = useState<any>(null)
   const router = useRouter()
   const supabase = createClient()
+  const { itemCount } = useCart()
 
   useState(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -50,6 +52,19 @@ export default function Navigation() {
             <Link href="/pricing" className="text-gold hover:text-gold-dark transition-colors font-medium">
               Gold
             </Link>
+
+            {/* Cart Icon */}
+            <Link href="/cart" className="relative p-2 text-text-muted hover:text-accent transition-colors" aria-label="Cart">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+              </svg>
+              {itemCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-accent text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium">
+                  {itemCount > 99 ? '99+' : itemCount}
+                </span>
+              )}
+            </Link>
+
             {user ? (
               <div className="flex items-center space-x-4">
                 <Link href="/dashboard" className="btn-primary text-sm py-2 px-4">
@@ -66,19 +81,31 @@ export default function Navigation() {
             )}
           </div>
 
-          <button
-            className="md:hidden"
-            onClick={() => setIsOpen(!isOpen)}
-            aria-label="Toggle menu"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              {isOpen ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          <div className="flex items-center gap-2 md:hidden">
+            <Link href="/cart" className="relative p-2 text-text-muted" aria-label="Cart">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+              </svg>
+              {itemCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-accent text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium">
+                  {itemCount}
+                </span>
               )}
-            </svg>
-          </button>
+            </Link>
+            <button
+              className="p-2"
+              onClick={() => setIsOpen(!isOpen)}
+              aria-label="Toggle menu"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {isOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
+          </div>
         </div>
 
         {isOpen && (

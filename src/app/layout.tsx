@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { Fraunces, Inter } from "next/font/google"
 import "./globals.css"
+import { CartProvider } from "@/context/CartContext"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -24,7 +25,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${inter.variable} ${fraunces.variable}`}>
-      <body>{children}</body>
+      <body>
+        <CartProvider>
+          {children}
+        </CartProvider>
+      </body>
     </html>
   )
 }

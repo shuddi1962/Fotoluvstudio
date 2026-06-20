@@ -11,23 +11,28 @@ serve(async (req: Request) => {
 
     const printfulApiKey = Deno.env.get("PRINTFUL_API_KEY")
 
-    // Create order in database
+    const orderPayload: any = {
+      total_amount: payload.total_amount,
+      payment_provider: payload.payment_provider,
+      payment_reference: payload.payment_reference,
+      shipping_address: payload.shipping_address,
+      status: "paid",
+    }
+
+    if (payload.customer_id) {
+      orderPayload.customer_id = payload.customer_id
+    } else {
+      orderPayload.guest_email = payload.guest_email
+    }
+
     const { data: order, error: orderError } = await supabase
       .from("orders")
-      .insert({
-        customer_id: payload.customer_id,
-        total_amount: payload.total_amount,
-        payment_provider: payload.payment_provider,
-        payment_reference: payload.payment_reference,
-        shipping_address: payload.shipping_address,
-        status: "paid",
-      })
+      .insert(orderPayload)
       .select()
       .single()
 
     if (orderError) throw orderError
 
-    // Create order items and calculate commissions
     for (const item of payload.items) {
       const { data: feeRule } = await supabase
         .from("platform_fee_rules")
@@ -54,16 +59,17 @@ serve(async (req: Request) => {
         commission_amount: commission,
         seller_payout_amount: sellerPayout,
       })
+
+      await supabase.from("cart_items").delete().eq("seller_product_id", item.seller_product_id)
     }
 
-    // Place Printful order
     if (printfulApiKey) {
       const printfulItems = payload.items.map((item: any) => ({
         sync_product_id: item.sync_product_id,
         quantity: item.quantity,
       }))
 
-      await fetch("https://api.printful.com/orders", {
+      const printfulRes = await fetch("https://api.printful.com/orders", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${printfulApiKey}`,
@@ -73,13 +79,33 @@ serve(async (req: Request) => {
           recipient: {
             name: payload.shipping_address.name,
             address1: payload.shipping_address.line1,
+            address2: payload.shipping_address.line2 || "",
             city: payload.shipping_address.city,
             state_code: payload.shipping_address.state,
             country_code: payload.shipping_address.country,
             zip: payload.shipping_address.zip,
+            email: payload.guest_email || payload.customer_email,
           },
           items: printfulItems,
         }),
+      })
+
+      const printfulData = await printfulRes.json()
+      if (printfulData.result?.id) {
+        await supabase
+          .from("orders")
+          .update({ printful_order_id: String(printfulData.result.id) })
+          .eq("id", order.id)
+      }
+    }
+
+    if (payload.customer_id) {
+      await supabase.from("notifications").insert({
+        user_id: payload.customer_id,
+        type: "order_confirmation",
+        title: "Order Confirmed",
+        message: `Your order #${order.id.slice(0, 8)} has been placed successfully.`,
+        link: `/orders/${order.id}`,
       })
     }
 

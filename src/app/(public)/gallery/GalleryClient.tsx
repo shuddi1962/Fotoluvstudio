@@ -3,11 +3,16 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase-client'
 import MasonryGrid from '@/components/gallery/MasonryGrid'
+import MediaLightbox from '@/components/lightbox/MediaLightbox'
 import Spinner from '@/components/ui/Spinner'
 import Image from 'next/image'
-import Link from 'next/link'
-import type { Media } from '@/types/database'
-import { getDemoMedia, getDemoCollections } from '@/lib/demo-data'
+import type { Media, Profile, SellerProfile } from '@/types/database'
+import { getDemoMedia } from '@/lib/demo-data'
+
+interface LightboxMedia extends Media {
+  owner?: Pick<Profile, 'id' | 'full_name' | 'avatar_url'>
+  seller?: Pick<SellerProfile, 'storefront_name' | 'storefront_slug'> | null
+}
 
 const CATEGORIES = [
   { slug: '', label: 'All Photos' },
@@ -24,6 +29,7 @@ export default function GalleryClient() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState('')
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const supabase = createClient()
 
   useEffect(() => {
@@ -84,31 +90,61 @@ export default function GalleryClient() {
         <div className="flex justify-center py-16"><Spinner /></div>
       ) : (
         <>
-          {/* Featured demo strip on empty state */}
           {!loading && photos.length > 0 && (
             <div className="mb-10">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-headline">Trending Now</h3>
-                <Link href="/collections" className="text-xs text-accent hover:underline">View all</Link>
               </div>
               <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 snap-x snap-mandatory scrollbar-hide">
-                {photos.slice(0, 6).map((m: any) => (
-                  <Link
+                {photos.slice(0, 6).map((m: any, idx) => (
+                  <button
                     key={m.id}
-                    href={`/gallery/${m.id}`}
+                    onClick={() => setLightboxIndex(idx)}
                     className="snap-start shrink-0 w-48 md:w-56 group relative overflow-hidden rounded-lg aspect-[3/4] bg-gray-100"
                   >
                     <Image src={m.storage_path_derivative} alt={m.title || ""} fill className="object-cover group-hover:scale-105 transition-transform duration-300" sizes="224px" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                     {m.title && <p className="absolute bottom-2 left-2 right-2 text-white text-xs font-medium truncate">{m.title}</p>}
-                  </Link>
+                  </button>
                 ))}
               </div>
             </div>
           )}
 
-          <MasonryGrid items={photos} />
+          <div className="masonry-grid">
+            {photos.map((item, idx) => (
+              <button
+                key={item.id}
+                onClick={() => setLightboxIndex(idx)}
+                className="masonry-item block group relative overflow-hidden rounded-lg w-full text-left"
+              >
+                <Image
+                  src={item.storage_path_derivative || '/images/placeholder.svg'}
+                  alt={item.title || 'Photo'}
+                  width={item.width_px || 800}
+                  height={item.height_px || 600}
+                  className="w-full h-auto object-cover rounded-lg transition-transform duration-300 group-hover:scale-105"
+                  loading="lazy"
+                />
+                {item.title && (
+                  <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                    <p className="text-white text-sm font-medium truncate">{item.title}</p>
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
         </>
+      )}
+
+      {lightboxIndex !== null && (
+        <MediaLightbox
+          media={photos[lightboxIndex] as LightboxMedia}
+          allMedia={photos as LightboxMedia[]}
+          currentIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          onNavigate={(idx) => setLightboxIndex(idx)}
+        />
       )}
     </div>
   )

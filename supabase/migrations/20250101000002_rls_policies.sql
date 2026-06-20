@@ -154,6 +154,34 @@ CREATE POLICY "Admin can manage inquiries" ON booking_inquiries
 CREATE POLICY "Anyone can submit inquiries" ON booking_inquiries
   FOR INSERT WITH CHECK (true);
 
+-- DOWNLOAD TIERS
+ALTER TABLE download_tiers ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Download tiers viewable by all" ON download_tiers
+  FOR SELECT USING (true);
+CREATE POLICY "Service role can manage download tiers" ON download_tiers
+  FOR ALL USING (auth.role() = 'service_role');
+
+-- CART ITEMS
+ALTER TABLE cart_items ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage own cart items" ON cart_items
+  FOR ALL USING (
+    (auth.uid() = cart_owner_id) OR
+    (cart_owner_id IS NULL AND guest_session_id IS NOT NULL)
+  );
+CREATE POLICY "Service role can manage all cart items" ON cart_items
+  FOR ALL USING (auth.role() = 'service_role');
+
+-- MEDIA EDITS
+ALTER TABLE media_edits ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Media edits viewable by owner" ON media_edits
+  FOR SELECT USING (
+    edited_by = auth.uid() OR
+    media_id IN (SELECT id FROM media WHERE owner_id = auth.uid()) OR
+    auth.uid() IN (SELECT id FROM profiles WHERE role = 'admin')
+  );
+CREATE POLICY "Service role can manage all edits" ON media_edits
+  FOR ALL USING (auth.role() = 'service_role');
+
 -- Storage bucket policies
 -- web-derivatives (public read)
 CREATE POLICY "Web derivatives public read" ON storage.objects

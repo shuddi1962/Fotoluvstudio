@@ -32,6 +32,7 @@ export interface Media {
   is_featured: boolean
   width_px: number | null
   height_px: number | null
+  watermark_tile_applied: boolean
   created_at: string
 }
 
@@ -103,6 +104,7 @@ export interface PlatformFeeRule {
 export interface Order {
   id: string
   customer_id: string | null
+  guest_email: string | null
   status: 'pending' | 'paid' | 'fulfilled' | 'shipped' | 'cancelled'
   total_amount: number
   payment_provider: 'paystack' | 'flutterwave' | 'stripe' | null
@@ -182,5 +184,35 @@ export interface BookingInquiry {
   budget_range: string | null
   message: string | null
   status: 'new' | 'read' | 'contacted' | 'closed'
+  created_at: string
+}
+
+export interface DownloadTier {
+  id: string
+  media_type: 'photo' | 'video'
+  tier_name: string
+  width_px: number
+  height_px: number
+  is_free_tier: boolean
+  sort_order: number
+  created_at: string
+}
+
+export interface CartItem {
+  id: string
+  cart_owner_id: string | null
+  guest_session_id: string | null
+  seller_product_id: string
+  quantity: number
+  created_at: string
+}
+
+export interface MediaEdit {
+  id: string
+  media_id: string
+  edited_by: string | null
+  tool_used: 'add_text' | 'canva' | 'convert_to_gif'
+  result_storage_path: string | null
+  source_was_watermarked: boolean
   created_at: string
 }

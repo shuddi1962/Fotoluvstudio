@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 serve(async (req: Request) => {
   try {
-    const { media_id } = await req.json()
+    const { media_id, tier_id } = await req.json()
     const authHeader = req.headers.get("Authorization") || ""
     const token = authHeader.replace("Bearer ", "")
 
@@ -43,27 +43,82 @@ serve(async (req: Request) => {
 
     let filePath: string
     let requiresWatermark = false
-    let maxWidth: number | null = 1200
+    let maxWidth: number | null = null
+
+    const isOwnerOrAdmin = userId === media.owner_id || userRole === "admin"
+
+    if (tier_id) {
+      const { data: tier } = await supabase
+        .from("download_tiers")
+        .select("*")
+        .eq("id", tier_id)
+        .single()
+
+      if (tier) {
+        const tierLocked = !tier.is_free_tier
+
+        if (isOwnerOrAdmin) {
+          filePath = media.storage_path_original
+          requiresWatermark = false
+        } else if (isGoldMember) {
+          filePath = media.storage_path_original
+          requiresWatermark = false
+        } else {
+          if (media.context === "client_event") {
+            if (tierLocked) {
+              filePath = media.storage_path_original
+              requiresWatermark = true
+            } else {
+              filePath = media.storage_path_derivative || media.storage_path_original
+            }
+          } else {
+            if (tierLocked) {
+              return new Response(
+                JSON.stringify({
+                  error: "locked_tier",
+                  message: "This resolution requires Gold Membership",
+                  requires_upgrade: true,
+                }),
+                { status: 403 }
+              )
+            }
+            filePath = media.storage_path_derivative || media.storage_path_original
+          }
+        }
+
+        return new Response(
+          JSON.stringify({
+            url: filePath,
+            requires_watermark: requiresWatermark,
+            max_width: null,
+            is_gold_member: isGoldMember,
+            tier: { name: tier.tier_name, width: tier.width_px, height: tier.height_px },
+          }),
+          { headers: { "Content-Type": "application/json" } }
+        )
+      }
+    }
 
     if (media.context === "public_gallery") {
       filePath = media.storage_path_derivative || media.storage_path_original
+      if (!isGoldMember && !isOwnerOrAdmin) {
+        requiresWatermark = true
+      }
     } else if (media.context === "client_event") {
-      if (userId === media.owner_id || userRole === "admin") {
-        if (isGoldMember) {
-          filePath = media.storage_path_original
-          requiresWatermark = false
-          maxWidth = null
-        } else {
-          filePath = media.storage_path_original
-          requiresWatermark = true
-          maxWidth = null
-        }
+      if (isOwnerOrAdmin || isGoldMember) {
+        filePath = media.storage_path_original
+        requiresWatermark = false
       } else {
-        filePath = media.storage_path_derivative || media.storage_path_original
+        filePath = media.storage_path_original
+        requiresWatermark = true
       }
     } else if (media.context === "seller_design") {
-      if (userId === media.owner_id || userRole === "admin") {
+      if (isOwnerOrAdmin) {
         filePath = media.storage_path_original
+        requiresWatermark = false
+      } else if (isGoldMember) {
+        filePath = media.storage_path_original
+        requiresWatermark = false
       } else {
         return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403 })
       }
@@ -71,13 +126,9 @@ serve(async (req: Request) => {
       filePath = media.storage_path_original
     }
 
-    const { data: fileData } = await supabase.storage
-      .from(media.context === "public_gallery" ? "web-derivatives" : "originals")
-      .createSignedUrl(filePath, 3600)
-
     return new Response(
       JSON.stringify({
-        url: fileData?.signedUrl,
+        url: filePath,
         requires_watermark: requiresWatermark,
         max_width: maxWidth,
         is_gold_member: isGoldMember,
