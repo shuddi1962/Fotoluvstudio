@@ -40,11 +40,21 @@ export async function middleware(request: NextRequest) {
       .single()
 
     if (request.nextUrl.pathname.startsWith('/admin') && profile?.role !== 'admin') {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
+      const fallback = profile?.role === 'seller' ? '/seller/dashboard' : '/dashboard'
+      return NextResponse.redirect(new URL(fallback, request.url))
     }
 
     if (request.nextUrl.pathname.startsWith('/seller') && profile?.role !== 'seller' && profile?.role !== 'admin') {
-      return NextResponse.redirect(new URL('/become-a-seller', request.url))
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+
+    // Role-based dashboard redirect: admin/seller hitting /dashboard -> their own
+    const isClientDashboard = request.nextUrl.pathname === '/dashboard' || request.nextUrl.pathname.startsWith('/dashboard/')
+    if (isClientDashboard && profile?.role === 'admin') {
+      return NextResponse.redirect(new URL('/admin/dashboard', request.url))
+    }
+    if (isClientDashboard && profile?.role === 'seller') {
+      return NextResponse.redirect(new URL('/seller/dashboard', request.url))
     }
   }
 

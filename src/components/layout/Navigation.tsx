@@ -9,6 +9,7 @@ import { useCart } from "@/context/CartContext"
 export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
   const [user, setUser] = useState<any>(null)
+  const [role, setRole] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
   const { itemCount } = useCart()
@@ -16,8 +17,15 @@ export default function Navigation() {
   useState(() => {
     supabase.auth.getUser().then(({ data }) => {
       setUser(data.user)
+      if (data.user) {
+        supabase.from('profiles').select('role').eq('id', data.user.id).single().then(({ data: profile }) => {
+          if (profile) setRole(profile.role)
+        })
+      }
     })
   })
+
+  const dashboardHref = role === 'admin' ? '/admin/dashboard' : role === 'seller' ? '/seller/dashboard' : '/dashboard'
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -67,7 +75,7 @@ export default function Navigation() {
 
             {user ? (
               <div className="flex items-center space-x-4">
-                <Link href="/dashboard" className="btn-primary text-sm py-2 px-4">
+                <Link href={dashboardHref} className="btn-primary text-sm py-2 px-4">
                   Dashboard
                 </Link>
                 <button onClick={handleSignOut} className="text-text-muted hover:text-text">
@@ -118,7 +126,7 @@ export default function Navigation() {
             <Link href="/pricing" className="block py-2 text-gold" onClick={() => setIsOpen(false)}>Gold</Link>
             {user ? (
               <>
-                <Link href="/dashboard" className="block py-2 text-accent font-medium" onClick={() => setIsOpen(false)}>Dashboard</Link>
+                <Link href={dashboardHref} className="block py-2 text-accent font-medium" onClick={() => setIsOpen(false)}>Dashboard</Link>
                 <button onClick={() => { handleSignOut(); setIsOpen(false) }} className="block py-2 text-text-muted">Sign Out</button>
               </>
             ) : (
