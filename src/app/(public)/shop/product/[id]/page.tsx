@@ -117,30 +117,57 @@ export default function ProductDetailPage() {
   const { addItem, itemCount } = useCart()
 
   useEffect(() => {
-    (async () => {
-      const { data } = await supabase
-        .from('seller_products')
-        .select('*, pod_product:pod_products(*), seller_profile:seller_profiles!seller_id(storefront_name, storefront_slug), media:media(storage_path_derivative, title)')
-        .eq('id', id)
-        .single()
+    let cancelled = false
 
-      if (data) {
-        setProduct(data as FullProductData)
-        const pod = (data as any).pod_product
-        if (pod?.available_sizes?.length) setSelectedSize(pod.available_sizes[0])
-        if (pod?.available_variants?.length) {
-          const firstVar = pod.available_variants[0]
-          if (typeof firstVar === 'string') setSelectedColor(firstVar)
-          else if (typeof firstVar === 'object' && firstVar.color) setSelectedColor(firstVar.color)
-        }
-      } else {
-        const demoProd = DEMO_PRODUCT
+    const timeout = setTimeout(() => {
+      if (!cancelled) {
+        applyDemo()
+      }
+    }, 3000)
+
+    const applyDemo = () => {
+      const demoProd = DEMO_PRODUCT
+      if (!cancelled) {
         setProduct(demoProd)
         if (demoProd.pod_product?.available_sizes?.length) setSelectedSize(demoProd.pod_product.available_sizes[0])
         if (demoProd.pod_product?.available_variants?.length) setSelectedColor(demoProd.pod_product.available_variants[0])
+        setLoading(false)
       }
-      setLoading(false)
+    }
+
+    ;(async () => {
+      try {
+        const { data } = await supabase
+          .from('seller_products')
+          .select('*, pod_product:pod_products(*), seller_profile:seller_profiles!seller_id(storefront_name, storefront_slug), media:media(storage_path_derivative, title)')
+          .eq('id', id)
+          .single()
+
+        if (cancelled) return
+        clearTimeout(timeout)
+
+        if (data) {
+          setProduct(data as FullProductData)
+          const pod = (data as any).pod_product
+          if (pod?.available_sizes?.length) setSelectedSize(pod.available_sizes[0])
+          if (pod?.available_variants?.length) {
+            const firstVar = pod.available_variants[0]
+            if (typeof firstVar === 'string') setSelectedColor(firstVar)
+            else if (typeof firstVar === 'object' && firstVar.color) setSelectedColor(firstVar.color)
+          }
+        } else {
+          applyDemo()
+        }
+        setLoading(false)
+      } catch {
+        if (!cancelled) {
+          clearTimeout(timeout)
+          applyDemo()
+        }
+      }
     })()
+
+    return () => { cancelled = true; clearTimeout(timeout) }
   }, [id])
 
   const handleAddToCart = async () => {
